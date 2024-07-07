@@ -1,6 +1,12 @@
 package redisClient
 
+import (
+	"fmt"
+	"net"
+)
+
 type RedisClient struct {
+	conn     net.Conn
 	host     string
 	port     int
 	username string
@@ -10,9 +16,12 @@ type RedisClient struct {
 }
 
 func NewClient(host string, port int) *RedisClient {
+	//for now let's just ignore potential error
+	conn, _ := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	return &RedisClient{
 		host: host,
 		port: port,
+		conn: conn,
 	}
 }
 
