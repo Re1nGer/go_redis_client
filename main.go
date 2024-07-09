@@ -17,7 +17,11 @@ type RedisClient struct {
 
 func NewClient(host string, port int) *RedisClient {
 	//for now let's just ignore potential error
-	conn, _ := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	if err != nil {
+		fmt.Errorf("%s", err.Error())
+		return nil
+	}
 	return &RedisClient{
 		host: host,
 		port: port,
@@ -35,4 +39,9 @@ func (r *RedisClient) Set(key string, val string) []byte {
 
 func (r *RedisClient) BuildArray(count int) []byte {
 	return make([]byte, 0)
+}
+
+func main() {
+	c := NewClient("localhost", 6379)
+	fmt.Println(c)
 }
