@@ -52,6 +52,7 @@ func (r *RedisClient) BuildArray(count int64) []byte {
 	return append(arr, '\r', '\n')
 }
 
+// Builds Incorrectly
 func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
 	arr = append(arr, []byte("3$")...)
 	arr = append(arr, '\r', '\n')
@@ -60,6 +61,24 @@ func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
 	arr = strconv.AppendInt(arr, int64(l), 10)
 	arr = append(arr, '\r', '\n')
 	arr = append(arr, []byte(key)...)
+	arr = append(arr, '\r', '\n')
+	fmt.Println(string(arr))
+	return arr
+}
+
+func (r *RedisClient) BuildSet(arr []byte, key string, value string) []byte {
+	arr = append(arr, []byte("3$")...)
+	arr = append(arr, '\r', '\n')
+	l := len(key)
+	v := len(value)
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(l), 10)
+	arr = append(arr, '\r', '\n')
+	arr = append(arr, []byte(key)...)
+	arr = append(arr, '\r', '\n')
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(v), 10)
+	arr = append(arr, []byte(value)...)
 	arr = append(arr, '\r', '\n')
 	fmt.Println(string(arr))
 	return arr
