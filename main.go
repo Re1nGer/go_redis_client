@@ -37,7 +37,7 @@ func (r *RedisClient) Get(key string) []byte {
 
 func (r *RedisClient) Set(key string, val string) []byte {
 	arr := r.BuildArray(3)
-	return r.BuildSet(arr, "test", "key")
+	return r.BuildSet(arr, key, val)
 }
 
 func (r *RedisClient) BuildArray(count int64) []byte {
@@ -47,13 +47,9 @@ func (r *RedisClient) BuildArray(count int64) []byte {
 	return append(arr, '\r', '\n')
 }
 
-// Builds Incorrectly
+// gotta refactor this shit
 func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(3), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte("GET")...)
-	arr = append(arr, '\r', '\n')
+	arr = AppendGetCommand(arr)
 	l := len(key)
 	arr = append(arr, '$')
 	arr = strconv.AppendInt(arr, int64(l), 10)
@@ -65,28 +61,45 @@ func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
 }
 
 func (r *RedisClient) BuildSet(arr []byte, key string, value string) []byte {
-	k_len := len(key)
+	arr = AppendSetCommand(arr)
 	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(k_len), 10)
-	arr = append(arr, '\r', '\n')
-	l := len(key)
-	v := len(value)
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(l), 10)
+	arr = strconv.AppendInt(arr, int64(len(key)), 10)
 	arr = append(arr, '\r', '\n')
 	arr = append(arr, []byte(key)...)
 	arr = append(arr, '\r', '\n')
 	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(v), 10)
+	v_len := len(value)
+	arr = strconv.AppendInt(arr, int64(v_len), 10)
+	arr = append(arr, '\r', '\n')
 	arr = append(arr, []byte(value)...)
 	arr = append(arr, '\r', '\n')
 	fmt.Println(string(arr))
 	return arr
 }
 
+func AppendSetCommand(arr []byte) []byte {
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(3), 10)
+	arr = append(arr, '\r', '\n')
+	arr = append(arr, []byte("SET")...)
+	return append(arr, '\r', '\n')
+}
+func AppendGetCommand(arr []byte) []byte {
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(3), 10)
+	arr = append(arr, '\r', '\n')
+	arr = append(arr, []byte("GET")...)
+	return append(arr, '\r', '\n')
+}
+
+func AppendBulkString(arr []byte)   {}
+func AppendSimpleString(arr []byte) {}
+func AppendError(arr []byte)        {}
+func AppendNumber(arr []byte)       {}
+
 func main() {
 	c := NewClient("localhost", 6379)
-	arr := c.Get("test")
+	arr := c.Set("test", "value")
 	buf := make([]byte, 512)
 	c.conn.Write(arr)
 	n, _ := c.conn.Read(buf)
