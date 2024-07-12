@@ -32,17 +32,12 @@ func NewClient(host string, port int) *RedisClient {
 
 func (r *RedisClient) Get(key string) []byte {
 	arr := r.BuildArray(2)
-	arr = r.BuildGet(arr, key)
-	_, err := r.conn.Write(arr)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-	return arr
+	return r.BuildGet(arr, key)
 }
 
 func (r *RedisClient) Set(key string, val string) []byte {
-	return make([]byte, 0)
+	arr := r.BuildArray(3)
+	return r.BuildSet(arr, "test", "key")
 }
 
 func (r *RedisClient) BuildArray(count int64) []byte {
@@ -54,7 +49,10 @@ func (r *RedisClient) BuildArray(count int64) []byte {
 
 // Builds Incorrectly
 func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
-	arr = append(arr, []byte("3$")...)
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(3), 10)
+	arr = append(arr, '\r', '\n')
+	arr = append(arr, []byte("GET")...)
 	arr = append(arr, '\r', '\n')
 	l := len(key)
 	arr = append(arr, '$')
@@ -67,7 +65,9 @@ func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
 }
 
 func (r *RedisClient) BuildSet(arr []byte, key string, value string) []byte {
-	arr = append(arr, []byte("3$")...)
+	k_len := len(key)
+	arr = append(arr, '$')
+	arr = strconv.AppendInt(arr, int64(k_len), 10)
 	arr = append(arr, '\r', '\n')
 	l := len(key)
 	v := len(value)
@@ -87,8 +87,8 @@ func (r *RedisClient) BuildSet(arr []byte, key string, value string) []byte {
 func main() {
 	c := NewClient("localhost", 6379)
 	arr := c.Get("test")
-	fmt.Println(c, string(arr))
 	buf := make([]byte, 512)
+	c.conn.Write(arr)
 	n, _ := c.conn.Read(buf)
 	fmt.Println("response", string(buf[:n]))
 }
