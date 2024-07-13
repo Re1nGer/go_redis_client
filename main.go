@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 )
 
 type RedisClient struct {
@@ -23,7 +24,7 @@ func NewClient(host string, port int) (*RedisClient, error) {
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
-		return nil, errors.New("Failed To Connect To Redis")
+		return nil, errors.New("failed to connect to redis")
 	}
 	return &RedisClient{
 		host:   host,
@@ -33,14 +34,63 @@ func NewClient(host string, port int) (*RedisClient, error) {
 	}, nil
 }
 
-func (r *RedisClient) Get(key string) []byte {
-	arr := r.BuildArray(2)
-	return r.BuildGet(arr, key)
+func encodeCommand(args []string) []byte {
+	buf := []byte{'*'}
+	buf = strconv.AppendInt(buf, int64(len(args)), 10)
+	buf = append(buf, '\r', '\n')
+	for _, arg := range args {
+		buf = append(buf, '$')
+		buf = strconv.AppendInt(buf, int64(len(arg)), 10)
+		buf = append(buf, '\r', '\n')
+		buf = append(buf, arg...)
+		buf = append(buf, '\r', '\n')
+	}
+
+	return buf
 }
 
-func (r *RedisClient) Set(key string, val string) []byte {
-	arr := r.BuildArray(3)
-	return r.BuildSet(arr, key, val)
+func (r *RedisClient) Close() error {
+	return r.conn.Close()
+}
+
+func (r *RedisClient) sendCommand(comamnd []string) error {
+	encoded_command := encodeCommand(comamnd)
+	_, err := r.conn.Write(encoded_command)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *RedisClient) Do(command string, args ...string) (interface{}, error) {
+	if err := r.sendCommand(args); err != nil {
+		return nil, err
+	}
+	return r.readResponse()
+}
+
+func (r *RedisClient) Get(key string) (interface{}, error) {
+	resp, err := r.Do("GET", key)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Set(key string, val string) (interface{}, error) {
+	resp, err := r.Do("SET", key, val)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Exists(args ...string) (interface{}, error) {
+	resp, err := r.Do("EXISTS", args...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 func (r *RedisClient) BuildArray(count int64) []byte {
@@ -50,64 +100,76 @@ func (r *RedisClient) BuildArray(count int64) []byte {
 	return append(arr, '\r', '\n')
 }
 
-// gotta refactor this shit
-func (r *RedisClient) BuildGet(arr []byte, key string) []byte {
-	arr = AppendGetCommand(arr)
-	l := len(key)
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(l), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte(key)...)
-	arr = append(arr, '\r', '\n')
-	fmt.Println(string(arr))
-	return arr
+func (r *RedisClient) readResponse() (interface{}, error) {
+	line, err := r.reader.ReadString('\n')
+
+	if err != nil {
+		return nil, err
+	}
+
+	switch line[0] {
+	case '+':
+		return strings.TrimSpace(line[1:]), nil
+	case '-':
+		return nil, errors.New(strings.TrimSpace(line[1:]))
+	case ':':
+		return strconv.ParseInt(strings.TrimSpace(line[1:]), 10, 64)
+	case '$':
+		return r.readBulkString(line)
+	case '*':
+		return r.readArray(line)
+	default:
+		return nil, fmt.Errorf("unknown response type: %s", string(line[0]))
+	}
 }
 
-func (r *RedisClient) BuildSet(arr []byte, key string, value string) []byte {
-	arr = AppendSetCommand(arr)
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(len(key)), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte(key)...)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, '$')
-	v_len := len(value)
-	arr = strconv.AppendInt(arr, int64(v_len), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte(value)...)
-	arr = append(arr, '\r', '\n')
-	fmt.Println(string(arr))
-	return arr
+func (r *RedisClient) readBulkString(line string) (interface{}, error) {
+	length, err := strconv.Atoi(strings.TrimSpace(line[1:]))
+	if err != nil {
+		return nil, err
+	}
+	if length == -1 {
+		return nil, nil
+	}
+	buf := make([]byte, length+2) // +2 for \r\n
+	_, err = r.reader.Read(buf)
+	if err != nil {
+		return "", fmt.Errorf("error while reading bulk string %w", err)
+	}
+	return string(buf[:length]), nil
 }
 
-func AppendSetCommand(arr []byte) []byte {
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(3), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte("SET")...)
-	return append(arr, '\r', '\n')
+func (r *RedisClient) readArray(line string) ([]interface{}, error) {
+	count, err := strconv.Atoi(strings.TrimSpace(line[1:]))
+	if err != nil {
+		return nil, err
+	}
+	if count == -1 {
+		return nil, nil
+	}
+	array := make([]interface{}, count)
+	for i := 0; i < count; i++ {
+		array[i], err = r.readResponse()
+		if err != nil {
+			return nil, fmt.Errorf("error while reading array response %w", err)
+		}
+	}
+	return array, nil
 }
-func AppendGetCommand(arr []byte) []byte {
-	arr = append(arr, '$')
-	arr = strconv.AppendInt(arr, int64(3), 10)
-	arr = append(arr, '\r', '\n')
-	arr = append(arr, []byte("GET")...)
-	return append(arr, '\r', '\n')
-}
-
-func AppendBulkString(arr []byte)   {}
-func AppendSimpleString(arr []byte) {}
-func AppendError(arr []byte)        {}
-func AppendNumber(arr []byte)       {}
 
 func main() {
 	c, err := NewClient("localhost", 6379)
 	if err != nil {
 		return
 	}
-	arr := c.Set("test", "value")
-	buf := make([]byte, 512)
-	c.conn.Write(arr)
-	n, _ := c.conn.Read(buf)
-	fmt.Println("response", string(buf[:n]))
+	arr1, err1 := c.Set("test", "val")
+	if err1 != nil {
+		return
+	}
+
+	arr, err := c.Get("test")
+	if err != nil {
+		return
+	}
+	fmt.Println("response", arr1, arr)
 }
