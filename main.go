@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -8,6 +10,7 @@ import (
 
 type RedisClient struct {
 	conn     net.Conn
+	reader   bufio.Reader
 	host     string
 	port     int
 	username string
@@ -16,18 +19,18 @@ type RedisClient struct {
 	//for now it suffices to have just these fields
 }
 
-func NewClient(host string, port int) *RedisClient {
-	//for now let's just ignore potential error
+func NewClient(host string, port int) (*RedisClient, error) {
+
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
-		fmt.Errorf("%s", err.Error())
-		return nil
+		return nil, errors.New("Failed To Connect To Redis")
 	}
 	return &RedisClient{
-		host: host,
-		port: port,
-		conn: conn,
-	}
+		host:   host,
+		port:   port,
+		conn:   conn,
+		reader: *bufio.NewReader(conn),
+	}, nil
 }
 
 func (r *RedisClient) Get(key string) []byte {
@@ -98,7 +101,10 @@ func AppendError(arr []byte)        {}
 func AppendNumber(arr []byte)       {}
 
 func main() {
-	c := NewClient("localhost", 6379)
+	c, err := NewClient("localhost", 6379)
+	if err != nil {
+		return
+	}
 	arr := c.Set("test", "value")
 	buf := make([]byte, 512)
 	c.conn.Write(arr)
