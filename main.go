@@ -94,11 +94,19 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to redis %w", err)
 	}
-	return &RedisClient{
+
+	client := &RedisClient{
 		conn:   conn,
 		reader: *bufio.NewReader(conn),
 		Opts:   defaultOpts,
-	}, nil
+	}
+
+	auth_err := client.authenticate()
+	if auth_err != nil {
+		return nil, fmt.Errorf("error while authenticating %w", auth_err)
+	}
+
+	return client, nil
 }
 
 func defaultOptions() Opts {
@@ -162,8 +170,8 @@ func (r *RedisClient) Close() error {
 	return r.conn.Close()
 }
 
-func (r *RedisClient) sendCommand(comamnd []string) error {
-	encoded_command := encodeCommand(comamnd)
+func (r *RedisClient) sendCommand(args []string) error {
+	encoded_command := encodeCommand(args)
 	_, err := r.conn.Write(encoded_command)
 	if err != nil {
 		return err
@@ -171,9 +179,9 @@ func (r *RedisClient) sendCommand(comamnd []string) error {
 	return err
 }
 
-func (r *RedisClient) Do(command string, args ...string) (interface{}, error) {
+func (r *RedisClient) Do(args ...string) (interface{}, error) {
 	if err := r.sendCommand(args); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while sending command %w", err)
 	}
 	return r.readResponse()
 }
@@ -195,9 +203,20 @@ func (r *RedisClient) Set(key string, val string) (interface{}, error) {
 }
 
 func (r *RedisClient) Exists(args ...string) (interface{}, error) {
-	resp, err := r.Do("EXISTS", args...)
+	command_args := make([]string, 0, len(args)+1)
+	command_args = append(command_args, "EXISTS")
+	command_args = append(command_args, args...)
+	resp, err := r.Do(command_args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unknown command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LPop(listname string) (interface{}, error) {
+	resp, err := r.Do("LPOP", listname)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
 	}
 	return resp, nil
 }
@@ -208,7 +227,6 @@ func (r *RedisClient) readResponse() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	switch line[0] {
 	case '+':
 		return strings.TrimSpace(line[1:]), nil
@@ -228,7 +246,7 @@ func (r *RedisClient) readResponse() (interface{}, error) {
 func (r *RedisClient) readBulkString(line string) (interface{}, error) {
 	length, err := strconv.Atoi(strings.TrimSpace(line[1:]))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error while reading bulk string %w", err)
 	}
 	if length == -1 {
 		return nil, nil
@@ -259,19 +277,42 @@ func (r *RedisClient) readArray(line string) ([]interface{}, error) {
 	return array, nil
 }
 
-func main() {
-	c, err := NewClient("localhost", 6379)
-	if err != nil {
-		return
+func (c *RedisClient) authenticate() error {
+
+	if c.username != "" && c.password != "" {
+		return c.authCommand("AUTH", c.username, c.password)
+	} else if c.password != "" {
+		return c.authCommand("AUTH", c.password)
 	}
-	arr1, err1 := c.Set("test", "val")
-	if err1 != nil {
-		return
+	return nil
+}
+
+func (c *RedisClient) authCommand(args ...string) error {
+	resp, err := c.Do(args...)
+	if err != nil {
+		return fmt.Errorf("authentication failed: %v", err)
 	}
 
-	arr, err := c.Get("test")
+	if str, ok := resp.(string); ok && str == "OK" {
+		return nil
+	}
+
+	return fmt.Errorf("unexpected authentication response: %v", resp)
+}
+
+func main() {
+	c, err := NewClient("redis-15358.c92.us-east-1-3.ec2.redns.redis-cloud.com", 15358, WithPassword(""))
 	if err != nil {
+		fmt.Printf("error while connecting to redis %s", err)
 		return
 	}
-	fmt.Println("response", arr1, arr)
+	arr1, _ := c.Set("test", "vallllll")
+
+	arr, err := c.Get("test")
+
+	arr2, err2 := c.Exists("123", "3123", "124123")
+
+	arr3, err3 := c.LPop("nonexistant_list")
+
+	fmt.Println("response", arr1, arr, arr2, err2, err, arr3, err3)
 }
