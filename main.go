@@ -7,31 +7,140 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type RedisClient struct {
-	conn     net.Conn
-	reader   bufio.Reader
-	host     string
-	port     int
-	username string
-	password string
-	ssl      bool
-	//for now it suffices to have just these fields
+	conn   net.Conn
+	reader bufio.Reader
+	Opts
 }
 
-func NewClient(host string, port int) (*RedisClient, error) {
+type RedisOptions struct {
+	Opts
+}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+type Opts struct {
+	host                   string
+	port                   int
+	db                     int
+	username               string
+	password               string
+	ssl                    bool
+	socketTimeout          time.Duration
+	socketConnectTimeout   time.Duration
+	socketKeepAlive        bool
+	socketKeepaliveOptions *KeepAliveOptions
+	connectionPool         *ConnectionPool
+	unixSocketPath         string
+	encoding               string
+	encodingErrors         string
+	charset                string
+	errors                 []error
+	decodeResponses        bool
+	retryOnTimeout         bool
+	retryOnError           []error
+	sslKeyFile             string
+	sslCertFile            string
+	sslCertReqs            string
+	sslCaCerts             string
+	sslCaPath              string
+	sslCaData              []byte
+	sslCheckhostname       bool
+	sslPassword            string
+	sslValidateOcsp        bool
+	sslValidateOcspstapled bool
+	sslOcspContext         interface{} // this might need a more specific type
+	sslocspexpectedcert    []byte
+	maxconnections         int
+	singleConnectionClient bool
+	healthcheckInterval    time.Duration
+	clientname             string
+	libname                string
+	libversion             string
+	retry                  *RetryOptions
+	redisConnectFunc       RedisConnectFunc
+	credentialProvider     CredentialProvider
+	protocol               int
+}
+
+// TODO: Fill in
+type KeepAliveOptions struct{}
+type RetryOptions struct{}
+type CredentialProvider struct{}
+type ConnectionPool struct{}
+type RedisConnectFunc func() (net.Conn, error)
+
+type OptsFunc func(*Opts)
+
+func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
+
+	defaultOpts := defaultOptions()
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	var conn net.Conn
+
+	var err error
+
+	if defaultOpts.redisConnectFunc != nil {
+		conn, err = defaultOpts.redisConnectFunc()
+	} else {
+		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	}
+
 	if err != nil {
-		return nil, errors.New("failed to connect to redis")
+		return nil, fmt.Errorf("failed to connect to redis %w", err)
 	}
 	return &RedisClient{
-		host:   host,
-		port:   port,
 		conn:   conn,
 		reader: *bufio.NewReader(conn),
+		Opts:   defaultOpts,
 	}, nil
+}
+
+func defaultOptions() Opts {
+	return Opts{
+		host:            "localhost",
+		port:            6379,
+		libname:         "redis-client-go",
+		libversion:      "0.0.1",
+		protocol:        2,
+		decodeResponses: false,
+		db:              0,
+	}
+}
+
+func WithCustomConnectFunc(connFunc RedisConnectFunc) OptsFunc {
+	return func(o *Opts) {
+		o.redisConnectFunc = connFunc
+	}
+}
+
+func DecodeResponses(shouldDecode bool) OptsFunc {
+	return func(o *Opts) {
+		o.decodeResponses = shouldDecode
+	}
+}
+
+func WithClientName(clienName string) OptsFunc {
+	return func(o *Opts) {
+		o.clientname = clienName
+	}
+}
+
+func WithUsername(username string) OptsFunc {
+	return func(o *Opts) {
+		o.username = username
+	}
+}
+
+func WithPassword(password string) OptsFunc {
+	return func(o *Opts) {
+		o.password = password
+	}
 }
 
 func encodeCommand(args []string) []byte {
@@ -91,13 +200,6 @@ func (r *RedisClient) Exists(args ...string) (interface{}, error) {
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (r *RedisClient) BuildArray(count int64) []byte {
-	arr := make([]byte, 0)
-	arr = append(arr, '*')
-	arr = strconv.AppendInt(arr, count, 10)
-	return append(arr, '\r', '\n')
 }
 
 func (r *RedisClient) readResponse() (interface{}, error) {
