@@ -70,8 +70,20 @@ type RetryOptions struct{}
 type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
+type SetOpts struct {
+	NX      bool
+	XX      bool
+	Get     bool
+	EX      int64 //seconds item exists for
+	PX      int64 //milliseconds item exists for
+	EXAT    *time.Time
+	PXAT    *time.Time
+	KeepTTL bool
+}
 
 type OptsFunc func(*Opts)
+
+type SetOptsFunc func(*SetOpts)
 
 func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 
@@ -108,6 +120,72 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 	}
 
 	return client, nil
+}
+
+func (o *SetOpts) WithNX() *SetOpts {
+	o.NX = true
+	o.XX = false // NX and XX are mutually exclusive
+	return o
+}
+
+func (o *SetOpts) WithXX() *SetOpts {
+	o.XX = true
+	o.NX = false // NX and XX are mutually exclusive
+	return o
+}
+
+func (o *SetOpts) WithGet() *SetOpts {
+	o.Get = true
+	return o
+}
+
+func (o *SetOpts) WithEX(seconds int64) *SetOpts {
+	o.EX = seconds
+	o.PX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithPX(milliseconds int64) *SetOpts {
+	o.PX = milliseconds
+	o.EX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithEXAT(timestamp time.Time) *SetOpts {
+	o.EXAT = &timestamp
+	o.EX = 0
+	o.PX = 0
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithPXAT(timestamp time.Time) *SetOpts {
+	o.PXAT = &timestamp
+	o.EX = 0
+	o.PX = 0
+	o.EXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithKeepTTL() *SetOpts {
+	o.KeepTTL = true
+	o.EX = 0
+	o.PX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	return o
+}
+
+func NewSetOpts() *SetOpts {
+	return &SetOpts{}
 }
 
 func defaultOptions() Opts {
@@ -195,10 +273,64 @@ func (r *RedisClient) Get(key string) (interface{}, error) {
 	return resp, nil
 }
 
-func (r *RedisClient) Set(key string, val string) (interface{}, error) {
-	resp, err := r.Do("SET", key, val)
+func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (interface{}, error) {
+	args := []string{"SET", key, val}
+
+	if opts.NX {
+		args = append(args, "NX")
+	} else if opts.XX {
+		args = append(args, "XX")
+	}
+
+	if opts.Get {
+		args = append(args, "GET")
+	}
+
+	if opts.EX != 0 {
+		args = append(args, "EX", strconv.Itoa(int(opts.EX))) // set amount of seconds
+	} else if opts.PX != 0 {
+		args = append(args, "PX", strconv.FormatInt(int64(opts.PX), 10)) // set amount of milliseconds
+	} else if opts.EXAT != nil {
+		args = append(args, "EXAT", strconv.FormatInt(opts.EXAT.Unix(), 10)) //UNIX timestamp with seconds
+	} else if opts.PXAT != nil {
+		args = append(args, "PXAT", strconv.FormatInt(opts.PXAT.UnixNano()/int64(time.Millisecond), 10)) //UNIX timestamp with milliseconds
+	} else if opts.KeepTTL {
+		args = append(args, "KEEPTTL")
+	}
+
+	resp, err := r.Do(args...)
+
 	if err != nil {
 		return nil, err
+	}
+
+	// Handle the GET option
+	if opts.Get {
+		if resp == nil {
+			return nil, nil // Key didn't exist before
+		}
+		str, ok := resp.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected response type for SET with GET: %T", resp)
+		}
+		return str, nil
+	}
+
+	// Handle normal SET response
+	if resp == nil {
+		return nil, nil // SET NX/XX condition not met
+	}
+	_, ok := resp.(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected response type for SET: %T", resp)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Set(key string, val string) (interface{}, error) {
+	resp, err := r.Do("SET", val)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending set command %w", err)
 	}
 	return resp, nil
 }
@@ -220,13 +352,36 @@ func (r *RedisClient) Echo(val string) (interface{}, error) {
 		return nil, fmt.Errorf("error while sending echo command %w", err)
 	}
 	return resp, nil
-
 }
 
 func (r *RedisClient) LPop(listname string) (interface{}, error) {
 	resp, err := r.Do("LPOP", listname)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SetNx(key string, val string) (interface{}, error) {
+	resp, err := r.Do("SETNX", key, val)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending setnx command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SetRange(key string, offset int, val string) (interface{}, error) {
+	resp, err := r.Do("SETRANGE", key, strconv.Itoa(offset), val)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending setrange command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) StrLen(key string) (interface{}, error) {
+	resp, err := r.Do("STRLEN", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending strlen command: %w", err)
 	}
 	return resp, nil
 }
@@ -316,13 +471,18 @@ func main() {
 		fmt.Printf("error while connecting to redis %s", err)
 		return
 	}
-	arr1, _ := c.Set("test", "vallllll")
 
-	arr, err := c.Get("test")
+	/* 	arr1, _ := c.Set("test", "vallllll")
 
-	arr2, err2 := c.Exists("123", "3123", "124123")
+	   	arr, err := c.Get("test")
 
-	arr3, err3 := c.LPop("nonexistant_list")
+	   	arr2, err2 := c.Exists("123", "3123", "124123")
 
-	fmt.Println("response", arr1, arr, arr2, err2, err, arr3, err3)
+	   	arr3, err3 := c.SetWithOptions("test1", "val1", NewSetOpts().WithNX().WithEX(20)) */
+
+	arr4, err4 := c.Get("test1")
+
+	//fmt.Println("response", arr1, arr, arr2, err2, err, arr3, err3)
+
+	fmt.Println("response", arr4, err4)
 }
