@@ -103,6 +103,7 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 
 	auth_err := client.authenticate()
 	if auth_err != nil {
+		client.Close()
 		return nil, fmt.Errorf("error while authenticating %w", auth_err)
 	}
 
@@ -211,6 +212,15 @@ func (r *RedisClient) Exists(args ...string) (interface{}, error) {
 		return nil, fmt.Errorf("unknown command %w", err)
 	}
 	return resp, nil
+}
+
+func (r *RedisClient) Echo(val string) (interface{}, error) {
+	resp, err := r.Do("ECHO", val)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending echo command %w", err)
+	}
+	return resp, nil
+
 }
 
 func (r *RedisClient) LPop(listname string) (interface{}, error) {
