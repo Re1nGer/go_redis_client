@@ -146,6 +146,7 @@ Contributions to this Redis client are welcome! Here's how you can contribute:
 - Implement SSL/TLS support
 - Add more comprehensive error handling
 - Add benchmarks tests
+- Implement Context to add timeouts and command cancellations 
 
 ## License
 
