@@ -467,6 +467,32 @@ func (r *RedisClient) SisMember(key string, member string) (interface{}, error) 
 	return resp, nil
 }
 
+func (r *RedisClient) Smembers(key string) (interface{}, error) {
+	resp, err := r.Do("SMEMBERS", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending smembers command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Smismember(key string, members ...string) (interface{}, error) {
+	command_args := []string{"SMISMEMBER", key}
+	command_args = append(command_args, members...)
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending smismember command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Smove(source string, destination string, member string) (interface{}, error) {
+	resp, err := r.Do("SMOVE", source, destination, member)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending smove command: %w", err)
+	}
+	return resp, nil
+}
+
 func (r *RedisClient) readResponse() (interface{}, error) {
 	line, err := r.reader.ReadString('\n')
 
