@@ -1,4 +1,4 @@
-package main
+package redisclient
 
 import (
 	"bufio"
@@ -327,14 +327,6 @@ func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (int
 	return resp, nil
 }
 
-func (r *RedisClient) Set(key string, val string) (interface{}, error) {
-	resp, err := r.Do("SET", val)
-	if err != nil {
-		return nil, fmt.Errorf("error while sending set command %w", err)
-	}
-	return resp, nil
-}
-
 func (r *RedisClient) Exists(args ...string) (interface{}, error) {
 	command_args := make([]string, 0, len(args)+1)
 	command_args = append(command_args, "EXISTS")
@@ -354,10 +346,18 @@ func (r *RedisClient) Echo(val string) (interface{}, error) {
 	return resp, nil
 }
 
+// Lpop is unfinished
 func (r *RedisClient) LPop(listname string) (interface{}, error) {
 	resp, err := r.Do("LPOP", listname)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
+	}
+	return resp, nil
+}
+func (r *RedisClient) Set(key string, val string) (interface{}, error) {
+	resp, err := r.Do("SET", val)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending set command %w", err)
 	}
 	return resp, nil
 }
@@ -382,6 +382,67 @@ func (r *RedisClient) StrLen(key string) (interface{}, error) {
 	resp, err := r.Do("STRLEN", key)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending strlen command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Sadd(args ...string) (interface{}, error) {
+	command_args := []string{"SADD"}
+	command_args = append(command_args, args...)
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sadd command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Scard(key string) (interface{}, error) {
+	resp, err := r.Do("SCARD", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending scard command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Sdiff(keys ...string) (interface{}, error) {
+	commands_args := []string{"SDIFF"}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sdiff command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SdiffStore(destination string, keys ...string) (interface{}, error) {
+	commands_args := []string{"SDIFFSTORE"}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sdiffstore command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Sinter(key string, keys ...string) (interface{}, error) {
+	commands_args := []string{"SINTER", key}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sinter command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SinterCard(numcard int, keys []string, limit ...int) (interface{}, error) {
+	commands_args := []string{"SINTERCARD", strconv.Itoa(numcard)}
+	commands_args = append(commands_args, keys...)
+	if len(limit) > 0 {
+		commands_args = append(commands_args, "LIMIT", strconv.Itoa(limit[0]))
+	}
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sinter command: %w", err)
 	}
 	return resp, nil
 }
@@ -463,26 +524,4 @@ func (c *RedisClient) authCommand(args ...string) error {
 	}
 
 	return fmt.Errorf("unexpected authentication response: %v", resp)
-}
-
-func main() {
-	c, err := NewClient("redis-15358.c92.us-east-1-3.ec2.redns.redis-cloud.com", 15358, WithPassword(""))
-	if err != nil {
-		fmt.Printf("error while connecting to redis %s", err)
-		return
-	}
-
-	/* 	arr1, _ := c.Set("test", "vallllll")
-
-	   	arr, err := c.Get("test")
-
-	   	arr2, err2 := c.Exists("123", "3123", "124123")
-
-	   	arr3, err3 := c.SetWithOptions("test1", "val1", NewSetOpts().WithNX().WithEX(20)) */
-
-	arr4, err4 := c.Get("test1")
-
-	//fmt.Println("response", arr1, arr, arr2, err2, err, arr3, err3)
-
-	fmt.Println("response", arr4, err4)
 }
