@@ -434,6 +434,7 @@ func (r *RedisClient) Sinter(key string, keys ...string) (interface{}, error) {
 	return resp, nil
 }
 
+// Need to think of some better way of encapsulating method signature
 func (r *RedisClient) SinterCard(numcard int, keys []string, limit ...int) (interface{}, error) {
 	commands_args := []string{"SINTERCARD", strconv.Itoa(numcard)}
 	commands_args = append(commands_args, keys...)
@@ -442,7 +443,26 @@ func (r *RedisClient) SinterCard(numcard int, keys []string, limit ...int) (inte
 	}
 	resp, err := r.Do(commands_args...)
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending sinter command: %w", err)
+		return nil, fmt.Errorf("erorr while sending sintercard command: %w", err)
+	}
+	return resp, nil
+}
+
+// gotta test it further
+func (r *RedisClient) SinterStore(keys ...string) (interface{}, error) {
+	commands_args := []string{"SINTERSTORE"}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sinterstore command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SisMember(key string, member string) (interface{}, error) {
+	resp, err := r.Do("SISMEMBER", key, member)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending sismember command: %w", err)
 	}
 	return resp, nil
 }
