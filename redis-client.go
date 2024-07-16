@@ -85,6 +85,13 @@ type OptsFunc func(*Opts)
 
 type SetOptsFunc func(*SetOpts)
 
+type SScanOpts struct {
+	Match string
+	Count int
+}
+
+type SScanOptsFunc func(*SScanOpts)
+
 func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 
 	defaultOpts := defaultOptions()
@@ -182,6 +189,18 @@ func (o *SetOpts) WithKeepTTL() *SetOpts {
 	o.EXAT = nil
 	o.PXAT = nil
 	return o
+}
+
+func WithMatch(pattern string) SScanOptsFunc {
+	return func(opts *SScanOpts) {
+		opts.Match = pattern
+	}
+}
+
+func WithCount(count int) SScanOptsFunc {
+	return func(opts *SScanOpts) {
+		opts.Count = count
+	}
 }
 
 func NewSetOpts() *SetOpts {
@@ -489,6 +508,75 @@ func (r *RedisClient) Smove(source string, destination string, member string) (i
 	resp, err := r.Do("SMOVE", source, destination, member)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending smove command: %w", err)
+	}
+	return resp, nil
+}
+
+// requires multiple args
+func (r *RedisClient) Spop(key string) (interface{}, error) {
+	resp, err := r.Do("SPOP", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending spop command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SpopWithCount(key string, count int) (interface{}, error) {
+	resp, err := r.Do("SPOP", key, strconv.Itoa(count))
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending spop with count command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SRandMember(key string) (interface{}, error) {
+	resp, err := r.Do("SRANDMEMBER ", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending srandmember command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) SRandMemberWithCount(key string, count int) (interface{}, error) {
+	resp, err := r.Do("SRANDMEMBER ", key, strconv.Itoa(count))
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending srandmember with count command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Srem(key string, members ...string) (interface{}, error) {
+	commands_args := []string{"SREM", key}
+	commands_args = append(commands_args, members...)
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending srem with count command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Sscan(key string, cursor string, opts ...SScanOptsFunc) (interface{}, error) {
+
+	options := &SScanOpts{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	commands_args := []string{"SSCAN", key, cursor}
+
+	if options.Match != "" {
+		commands_args = append(commands_args, "MATCH", options.Match)
+	}
+	if options.Count > 0 {
+		commands_args = append(commands_args, "COUNT", strconv.Itoa(options.Count))
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending srem with count command: %w", err)
 	}
 	return resp, nil
 }
