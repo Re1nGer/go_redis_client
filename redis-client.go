@@ -129,6 +129,85 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 	return client, nil
 }
 
+func (r *RedisClient) readResponse() (interface{}, error) {
+	line, err := r.reader.ReadString('\n')
+
+	if err != nil {
+		return nil, err
+	}
+	switch line[0] {
+	case '+':
+		return strings.TrimSpace(line[1:]), nil
+	case '-':
+		return nil, errors.New(strings.TrimSpace(line[1:]))
+	case ':':
+		return strconv.ParseInt(strings.TrimSpace(line[1:]), 10, 64)
+	case '$':
+		return r.readBulkString(line)
+	case '*':
+		return r.readArray(line)
+	default:
+		return nil, fmt.Errorf("unknown response type: %s", string(line[0]))
+	}
+}
+
+func (r *RedisClient) readBulkString(line string) (interface{}, error) {
+	length, err := strconv.Atoi(strings.TrimSpace(line[1:]))
+	if err != nil {
+		return nil, fmt.Errorf("error while reading bulk string %w", err)
+	}
+	if length == -1 {
+		return nil, nil
+	}
+	buf := make([]byte, length+2) // +2 for \r\n
+	_, err = r.reader.Read(buf)
+	if err != nil {
+		return "", fmt.Errorf("error while reading bulk string %w", err)
+	}
+	return string(buf[:length]), nil
+}
+
+func (r *RedisClient) readArray(line string) ([]interface{}, error) {
+	count, err := strconv.Atoi(strings.TrimSpace(line[1:]))
+	if err != nil {
+		return nil, err
+	}
+	if count == -1 {
+		return nil, nil
+	}
+	array := make([]interface{}, count)
+	for i := 0; i < count; i++ {
+		array[i], err = r.readResponse()
+		if err != nil {
+			return nil, fmt.Errorf("error while reading array response %w", err)
+		}
+	}
+	return array, nil
+}
+
+func (c *RedisClient) authenticate() error {
+
+	if c.username != "" && c.password != "" {
+		return c.authCommand("AUTH", c.username, c.password)
+	} else if c.password != "" {
+		return c.authCommand("AUTH", c.password)
+	}
+	return nil
+}
+
+func (c *RedisClient) authCommand(args ...string) error {
+	resp, err := c.Do(args...)
+	if err != nil {
+		return fmt.Errorf("authentication failed: %v", err)
+	}
+
+	if str, ok := resp.(string); ok && str == "OK" {
+		return nil
+	}
+
+	return fmt.Errorf("unexpected authentication response: %v", resp)
+}
+
 func (o *SetOpts) WithNX() *SetOpts {
 	o.NX = true
 	o.XX = false // NX and XX are mutually exclusive
@@ -576,86 +655,29 @@ func (r *RedisClient) Sscan(key string, cursor string, opts ...SScanOptsFunc) (i
 	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending srem with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending sscan with count command: %w", err)
 	}
 	return resp, nil
 }
 
-func (r *RedisClient) readResponse() (interface{}, error) {
-	line, err := r.reader.ReadString('\n')
+func (r *RedisClient) SUnion(key string, keys ...string) (interface{}, error) {
+	commands_args := []string{"SUNION", key}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("erorr while sending sunion with count command: %w", err)
 	}
-	switch line[0] {
-	case '+':
-		return strings.TrimSpace(line[1:]), nil
-	case '-':
-		return nil, errors.New(strings.TrimSpace(line[1:]))
-	case ':':
-		return strconv.ParseInt(strings.TrimSpace(line[1:]), 10, 64)
-	case '$':
-		return r.readBulkString(line)
-	case '*':
-		return r.readArray(line)
-	default:
-		return nil, fmt.Errorf("unknown response type: %s", string(line[0]))
-	}
+	return resp, nil
 }
 
-func (r *RedisClient) readBulkString(line string) (interface{}, error) {
-	length, err := strconv.Atoi(strings.TrimSpace(line[1:]))
+func (r *RedisClient) SUnionStore(destination string, key string, keys ...string) (interface{}, error) {
+	commands_args := []string{"SUNIONSTORE", destination, key}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+
 	if err != nil {
-		return nil, fmt.Errorf("error while reading bulk string %w", err)
+		return nil, fmt.Errorf("erorr while sending sunionstore with count command: %w", err)
 	}
-	if length == -1 {
-		return nil, nil
-	}
-	buf := make([]byte, length+2) // +2 for \r\n
-	_, err = r.reader.Read(buf)
-	if err != nil {
-		return "", fmt.Errorf("error while reading bulk string %w", err)
-	}
-	return string(buf[:length]), nil
-}
-
-func (r *RedisClient) readArray(line string) ([]interface{}, error) {
-	count, err := strconv.Atoi(strings.TrimSpace(line[1:]))
-	if err != nil {
-		return nil, err
-	}
-	if count == -1 {
-		return nil, nil
-	}
-	array := make([]interface{}, count)
-	for i := 0; i < count; i++ {
-		array[i], err = r.readResponse()
-		if err != nil {
-			return nil, fmt.Errorf("error while reading array response %w", err)
-		}
-	}
-	return array, nil
-}
-
-func (c *RedisClient) authenticate() error {
-
-	if c.username != "" && c.password != "" {
-		return c.authCommand("AUTH", c.username, c.password)
-	} else if c.password != "" {
-		return c.authCommand("AUTH", c.password)
-	}
-	return nil
-}
-
-func (c *RedisClient) authCommand(args ...string) error {
-	resp, err := c.Do(args...)
-	if err != nil {
-		return fmt.Errorf("authentication failed: %v", err)
-	}
-
-	if str, ok := resp.(string); ok && str == "OK" {
-		return nil
-	}
-
-	return fmt.Errorf("unexpected authentication response: %v", resp)
+	return resp, nil
 }
