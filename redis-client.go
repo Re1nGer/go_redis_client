@@ -619,7 +619,7 @@ func (r *RedisClient) SRandMember(key string) (interface{}, error) {
 func (r *RedisClient) SRandMemberWithCount(key string, count int) (interface{}, error) {
 	resp, err := r.Do("SRANDMEMBER ", key, strconv.Itoa(count))
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending srandmember with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending srandmember command: %w", err)
 	}
 	return resp, nil
 }
@@ -630,7 +630,7 @@ func (r *RedisClient) Srem(key string, members ...string) (interface{}, error) {
 	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending srem with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending srem command: %w", err)
 	}
 	return resp, nil
 }
@@ -655,7 +655,7 @@ func (r *RedisClient) Sscan(key string, cursor string, opts ...SScanOptsFunc) (i
 	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending sscan with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending sscan command: %w", err)
 	}
 	return resp, nil
 }
@@ -666,7 +666,7 @@ func (r *RedisClient) SUnion(key string, keys ...string) (interface{}, error) {
 	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending sunion with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending sunion command: %w", err)
 	}
 	return resp, nil
 }
@@ -677,7 +677,26 @@ func (r *RedisClient) SUnionStore(destination string, key string, keys ...string
 	resp, err := r.Do(commands_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("erorr while sending sunionstore with count command: %w", err)
+		return nil, fmt.Errorf("erorr while sending sunionstore command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Del(key string, keys ...string) (interface{}, error) {
+	commands_args := []string{key}
+	commands_args = append(commands_args, keys...)
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending delete ommand: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Dump(key string) (interface{}, error) {
+	resp, err := r.Do("DUMP ", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending dump command: %w", err)
 	}
 	return resp, nil
 }
