@@ -683,7 +683,7 @@ func (r *RedisClient) SUnionStore(destination string, key string, keys ...string
 }
 
 func (r *RedisClient) Del(key string, keys ...string) (interface{}, error) {
-	commands_args := []string{key}
+	commands_args := []string{"DEL", key}
 	commands_args = append(commands_args, keys...)
 	resp, err := r.Do(commands_args...)
 
@@ -694,9 +694,41 @@ func (r *RedisClient) Del(key string, keys ...string) (interface{}, error) {
 }
 
 func (r *RedisClient) Dump(key string) (interface{}, error) {
-	resp, err := r.Do("DUMP ", key)
+	resp, err := r.Do("DUMP", key)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending dump command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HDel(key string, field string, fields ...string) (interface{}, error) {
+	commands_args := []string{"HDEL", key, field}
+	commands_args = append(commands_args, fields...)
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hdel command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) HSet(key string, field string, value string, fieldvalueargs ...string) (interface{}, error) {
+	commands_args := []string{"HSET", key, field, value}
+	commands_args = append(commands_args, fieldvalueargs...)
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hset command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) HGet(key string, field string) (interface{}, error) {
+	resp, err := r.Do("HGET", key, field)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hget command: %w", err)
 	}
 	return resp, nil
 }
