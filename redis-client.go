@@ -756,3 +756,13 @@ func (r *RedisClient) HLen(key string) (interface{}, error) {
 	}
 	return resp, nil
 }
+
+func (r *RedisClient) HExpireTime(key string, numFields int, field string, fields ...string) (interface{}, error) {
+	commands_args := []string{"HEXPIRETIME", key, "FIELDS", strconv.Itoa(numFields), field}
+	commands_args = append(commands_args, fields...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hexpire time command: %w", err)
+	}
+	return resp, nil
+}
