@@ -732,3 +732,27 @@ func (r *RedisClient) HGet(key string, field string) (interface{}, error) {
 	}
 	return resp, nil
 }
+
+func (r *RedisClient) HExists(key string, field string) (interface{}, error) {
+	resp, err := r.Do("HEXISTS", key, field)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hexists command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HGetAll(key string) (interface{}, error) {
+	resp, err := r.Do("HGETALL", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hgetall command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HLen(key string) (interface{}, error) {
+	resp, err := r.Do("HLEN", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hlen command: %w", err)
+	}
+	return resp, nil
+}
