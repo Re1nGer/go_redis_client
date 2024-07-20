@@ -265,11 +265,22 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 	if defaultOpts.redisConnectFunc != nil {
 		conn, err = defaultOpts.redisConnectFunc()
 	} else {
-		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+		dial := net.Dialer{
+			Timeout: defaultOpts.socketConnectTimeout,
+		}
+		conn, err = dial.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	}
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to redis %w", err)
+	}
+
+	if defaultOpts.socketTimeout > 0 {
+		err = conn.SetDeadline(time.Now().Add(defaultOpts.socketTimeout))
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("failed to set connection deadline: %w", err)
+		}
 	}
 
 	client := &RedisClient{
