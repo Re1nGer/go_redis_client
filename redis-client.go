@@ -81,18 +81,19 @@ type SetOpts struct {
 	KeepTTL bool
 }
 
-type HPExpireOptions struct {
-	NX            bool
-	XX            bool
-	GT            bool
-	LT            bool
-	Duration      *time.Duration
-	UnixTimestamp *int64
+type HExpireOpts struct {
+	NX       bool
+	XX       bool
+	GT       bool
+	LT       bool
+	Duration *time.Duration
 }
 
 type OptsFunc func(*Opts)
 
 type SetOptsFunc func(*SetOpts)
+
+type HExpireOptsFunc func(*HExpireOpts)
 
 type SScanOpts struct {
 	Match string
@@ -100,6 +101,154 @@ type SScanOpts struct {
 }
 
 type SScanOptsFunc func(*SScanOpts)
+
+func (o *SetOpts) WithNX() *SetOpts {
+	o.NX = true
+	o.XX = false // NX and XX are mutually exclusive
+	return o
+}
+
+func (o *SetOpts) WithXX() *SetOpts {
+	o.XX = true
+	o.NX = false // NX and XX are mutually exclusive
+	return o
+}
+
+func (o *SetOpts) WithGet() *SetOpts {
+	o.Get = true
+	return o
+}
+
+func (o *SetOpts) WithEX(seconds int64) *SetOpts {
+	o.EX = seconds
+	o.PX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithPX(milliseconds int64) *SetOpts {
+	o.PX = milliseconds
+	o.EX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithEXAT(timestamp time.Time) *SetOpts {
+	o.EXAT = &timestamp
+	o.EX = 0
+	o.PX = 0
+	o.PXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithPXAT(timestamp time.Time) *SetOpts {
+	o.PXAT = &timestamp
+	o.EX = 0
+	o.PX = 0
+	o.EXAT = nil
+	o.KeepTTL = false
+	return o
+}
+
+func (o *SetOpts) WithKeepTTL() *SetOpts {
+	o.KeepTTL = true
+	o.EX = 0
+	o.PX = 0
+	o.EXAT = nil
+	o.PXAT = nil
+	return o
+}
+
+func WithMatch(pattern string) SScanOptsFunc {
+	return func(opts *SScanOpts) {
+		opts.Match = pattern
+	}
+}
+
+func WithCount(count int) SScanOptsFunc {
+	return func(opts *SScanOpts) {
+		opts.Count = count
+	}
+}
+
+func NewSetOpts() *SetOpts {
+	return &SetOpts{}
+}
+
+func NewHExpireOpts() HExpireOpts {
+	return HExpireOpts{}
+}
+
+func WithNX() HExpireOptsFunc {
+	return func(o *HExpireOpts) {
+		o.NX = true
+	}
+}
+
+func WithXX() HExpireOptsFunc {
+	return func(o *HExpireOpts) {
+		o.XX = true
+	}
+}
+
+func WithGT() HExpireOptsFunc {
+	return func(o *HExpireOpts) {
+		o.GT = true
+	}
+}
+
+func WithLT() HExpireOptsFunc {
+	return func(o *HExpireOpts) {
+		o.LT = true
+	}
+}
+
+func defaultOptions() Opts {
+	return Opts{
+		host:            "localhost",
+		port:            6379,
+		libname:         "redis-client-go",
+		libversion:      "0.0.1",
+		protocol:        2,
+		decodeResponses: false,
+		db:              0,
+	}
+}
+
+func WithCustomConnectFunc(connFunc RedisConnectFunc) OptsFunc {
+	return func(o *Opts) {
+		o.redisConnectFunc = connFunc
+	}
+}
+
+func DecodeResponses(shouldDecode bool) OptsFunc {
+	return func(o *Opts) {
+		o.decodeResponses = shouldDecode
+	}
+}
+
+func WithClientName(clienName string) OptsFunc {
+	return func(o *Opts) {
+		o.clientname = clienName
+	}
+}
+
+func WithUsername(username string) OptsFunc {
+	return func(o *Opts) {
+		o.username = username
+	}
+}
+
+func WithPassword(password string) OptsFunc {
+	return func(o *Opts) {
+		o.password = password
+	}
+}
 
 func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 
@@ -215,126 +364,6 @@ func (c *RedisClient) authCommand(args ...string) error {
 	}
 
 	return fmt.Errorf("unexpected authentication response: %v", resp)
-}
-
-func (o *SetOpts) WithNX() *SetOpts {
-	o.NX = true
-	o.XX = false // NX and XX are mutually exclusive
-	return o
-}
-
-func (o *SetOpts) WithXX() *SetOpts {
-	o.XX = true
-	o.NX = false // NX and XX are mutually exclusive
-	return o
-}
-
-func (o *SetOpts) WithGet() *SetOpts {
-	o.Get = true
-	return o
-}
-
-func (o *SetOpts) WithEX(seconds int64) *SetOpts {
-	o.EX = seconds
-	o.PX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
-}
-
-func (o *SetOpts) WithPX(milliseconds int64) *SetOpts {
-	o.PX = milliseconds
-	o.EX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
-}
-
-func (o *SetOpts) WithEXAT(timestamp time.Time) *SetOpts {
-	o.EXAT = &timestamp
-	o.EX = 0
-	o.PX = 0
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
-}
-
-func (o *SetOpts) WithPXAT(timestamp time.Time) *SetOpts {
-	o.PXAT = &timestamp
-	o.EX = 0
-	o.PX = 0
-	o.EXAT = nil
-	o.KeepTTL = false
-	return o
-}
-
-func (o *SetOpts) WithKeepTTL() *SetOpts {
-	o.KeepTTL = true
-	o.EX = 0
-	o.PX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	return o
-}
-
-func WithMatch(pattern string) SScanOptsFunc {
-	return func(opts *SScanOpts) {
-		opts.Match = pattern
-	}
-}
-
-func WithCount(count int) SScanOptsFunc {
-	return func(opts *SScanOpts) {
-		opts.Count = count
-	}
-}
-
-func NewSetOpts() *SetOpts {
-	return &SetOpts{}
-}
-
-func defaultOptions() Opts {
-	return Opts{
-		host:            "localhost",
-		port:            6379,
-		libname:         "redis-client-go",
-		libversion:      "0.0.1",
-		protocol:        2,
-		decodeResponses: false,
-		db:              0,
-	}
-}
-
-func WithCustomConnectFunc(connFunc RedisConnectFunc) OptsFunc {
-	return func(o *Opts) {
-		o.redisConnectFunc = connFunc
-	}
-}
-
-func DecodeResponses(shouldDecode bool) OptsFunc {
-	return func(o *Opts) {
-		o.decodeResponses = shouldDecode
-	}
-}
-
-func WithClientName(clienName string) OptsFunc {
-	return func(o *Opts) {
-		o.clientname = clienName
-	}
-}
-
-func WithUsername(username string) OptsFunc {
-	return func(o *Opts) {
-		o.username = username
-	}
-}
-
-func WithPassword(password string) OptsFunc {
-	return func(o *Opts) {
-		o.password = password
-	}
 }
 
 func encodeCommand(args []string) []byte {
@@ -817,5 +846,46 @@ func (r *RedisClient) HStrlen(key string, field string) (interface{}, error) {
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending hstrlen command: %w", err)
 	}
+	return resp, nil
+}
+
+// command doesn't exist ?
+func (r *RedisClient) HExpire(key string, seconds int64, fields []string, opts ...HExpireOptsFunc) (interface{}, error) {
+
+	var args []string
+
+	defaultOpts := NewHExpireOpts()
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	args = append(args, "HEXPIRE", key)
+
+	args = append(args, strconv.FormatInt(seconds, 10))
+
+	if defaultOpts.NX {
+		args = append(args, "NX")
+	}
+	if defaultOpts.XX {
+		args = append(args, "XX")
+	}
+	if defaultOpts.GT {
+		args = append(args, "GT")
+	}
+	if defaultOpts.LT {
+		args = append(args, "LT")
+	}
+
+	args = append(args, "FIELDS", strconv.Itoa(len(fields)))
+
+	args = append(args, fields...)
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return 0, fmt.Errorf("error while sending HEXPIRE command: %w", err)
+	}
+
 	return resp, nil
 }
