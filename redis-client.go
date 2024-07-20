@@ -81,6 +81,15 @@ type SetOpts struct {
 	KeepTTL bool
 }
 
+type HPExpireOptions struct {
+	NX            bool
+	XX            bool
+	GT            bool
+	LT            bool
+	Duration      *time.Duration
+	UnixTimestamp *int64
+}
+
 type OptsFunc func(*Opts)
 
 type SetOptsFunc func(*SetOpts)
@@ -358,7 +367,7 @@ func (r *RedisClient) sendCommand(args []string) error {
 
 func (r *RedisClient) Do(args ...string) (interface{}, error) {
 	if err := r.sendCommand(args); err != nil {
-		return nil, fmt.Errorf("error while sending command %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	return r.readResponse()
 }
@@ -763,6 +772,42 @@ func (r *RedisClient) HExpireTime(key string, numFields int, field string, field
 	resp, err := r.Do(commands_args...)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending hexpire time command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HIncrby(key string, field string, increment string) (interface{}, error) {
+	resp, err := r.Do("HINCRBY", key, field, increment)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hincrby command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HIncrbyfloat(key string, field string, increment string) (interface{}, error) {
+	resp, err := r.Do("HINCRBYFLOAT", key, field, increment)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hincrbyfloat command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HMGet(key string, field string, fields ...string) (interface{}, error) {
+	commands_args := []string{"HMGET", key, field}
+	commands_args = append(commands_args, fields...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hmget command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) HPersist(key string, numFields int, field string, fields ...string) (interface{}, error) {
+	commands_args := []string{"HPERSIST", key, "FIELDS", strconv.Itoa(numFields), field}
+	commands_args = append(commands_args, fields...)
+	resp, err := r.Do(commands_args...)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hpersist command: %w", err)
 	}
 	return resp, nil
 }
