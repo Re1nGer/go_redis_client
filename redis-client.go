@@ -811,3 +811,11 @@ func (r *RedisClient) HPersist(key string, numFields int, field string, fields .
 	}
 	return resp, nil
 }
+
+func (r *RedisClient) HStrlen(key string, field string) (interface{}, error) {
+	resp, err := r.Do("HSTRLEN", key, field)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending hstrlen command: %w", err)
+	}
+	return resp, nil
+}
