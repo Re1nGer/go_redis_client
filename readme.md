@@ -1,7 +1,6 @@
-
 # Redis Client for Go
 
-This is a lightweight, feature-rich Redis client for Go. It provides a simple and efficient way to interact with Redis servers, supporting various Redis commands and connection options with RESP v2
+This is a lightweight, feature-rich Redis client for Go. It provides a simple and efficient way to interact with Redis servers, supporting various Redis commands and connection options with RESP v2.
 
 ## Features
 
@@ -12,6 +11,7 @@ This is a lightweight, feature-rich Redis client for Go. It provides a simple an
 - SSL/TLS support (placeholder, not yet implemented)
 - Authentication support
 - Flexible configuration options
+- Socket timeout and keep-alive settings
 
 ## Installation
 
@@ -37,7 +37,9 @@ if err != nil {
 defer client.Close()
 ```
 
-You can also provide additional options:
+#### Connection Options
+
+You can provide additional options when connecting:
 
 ```go
 client, err := redisclient.NewClient("localhost", 6379,
@@ -45,6 +47,28 @@ client, err := redisclient.NewClient("localhost", 6379,
     redisclient.WithPassword("mypassword"),
     redisclient.DecodeResponses(true),
     redisclient.WithClientName("my-app"),
+    redisclient.WithSocketConnectTimeout(5 * time.Second),
+    redisclient.WithSocketTimeout(10 * time.Second),
+    redisclient.WithSocketKeepAlive(true, 30 * time.Second),
+)
+if err != nil {
+    // Handle error
+}
+defer client.Close()
+```
+
+#### Custom Connection Function
+
+You can also provide a custom connection function:
+
+```go
+customConnFunc := func() (net.Conn, error) {
+    // Your custom connection logic here
+    return net.Dial("tcp", "localhost:6379")
+}
+
+client, err := redisclient.NewClient("localhost", 6379,
+    redisclient.WithCustomConnectFunc(customConnFunc),
 )
 if err != nil {
     // Handle error
@@ -57,7 +81,6 @@ defer client.Close()
 To execute Redis commands, use corresponding command names as methods:
 
 ```go
-
 // Using a specific command method
 result, err := client.Set("mykey", "myvalue")
 if err != nil {
@@ -95,8 +118,9 @@ if err != nil {
 
 ## Available Commands
 
-The client currently supports the following Redis commands:
+The client supports the following Redis commands:
 
+### String Operations
 - GET
 - SET (with options: NX, XX, EX, PX, EXAT, PXAT, KEEPTTL, GET)
 - SETNX
@@ -104,13 +128,47 @@ The client currently supports the following Redis commands:
 - STRLEN
 - ECHO
 - EXISTS
+
+### List Operations
 - LPOP (partially implemented)
+
+### Set Operations
 - SADD
 - SCARD
 - SDIFF
 - SDIFFSTORE
 - SINTER
 - SINTERCARD
+- SINTERSTORE
+- SISMEMBER
+- SMEMBERS
+- SMISMEMBER
+- SMOVE
+- SPOP
+- SRANDMEMBER
+- SREM
+- SSCAN
+- SUNION
+- SUNIONSTORE
+
+### Hash Operations
+- HDEL
+- HSET
+- HGET
+- HEXISTS
+- HGETALL
+- HLEN
+- HEXPIRETIME
+- HINCRBY
+- HINCRBYFLOAT
+- HMGET
+- HPERSIST
+- HSTRLEN
+- HEXPIRE
+
+### Key Operations
+- DEL
+- DUMP
 
 More commands will be added in future updates.
 
@@ -120,9 +178,11 @@ The client supports various configuration options:
 
 - `WithUsername(username string)`: Set the username for authentication
 - `WithPassword(password string)`: Set the password for authentication
-- `DecodeResponses(shouldDecode bool)`: Enable/disable automatic response decoding
 - `WithClientName(clientName string)`: Set a custom client name
 - `WithCustomConnectFunc(connFunc RedisConnectFunc)`: Provide a custom connection function
+- `WithSocketConnectTimeout(duration time.Duration)`: Set the timeout for connecting to the Redis server
+- `WithSocketTimeout(duration time.Duration)`: Set the timeout for socket operations
+- `WithSocketKeepAlive(enabled bool, interval time.Duration)`: Enable and set the interval for TCP keep-alive packets
 
 ## Error Handling
 
@@ -137,7 +197,6 @@ Contributions to this Redis client are welcome! Here's how you can contribute:
 3. Write your code and tests
 4. Ensure all tests pass
 5. Submit a pull request with a clear description of your changes
-
 
 ### Under Development
 
