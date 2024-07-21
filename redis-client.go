@@ -2,6 +2,7 @@ package redisclient
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -21,51 +22,48 @@ type RedisOptions struct {
 }
 
 type Opts struct {
-	host                   string
-	port                   int
-	db                     int
-	username               string
-	password               string
-	ssl                    bool
-	socketTimeout          time.Duration
-	socketConnectTimeout   time.Duration
-	socketKeepAlive        bool
-	socketKeepaliveOptions *KeepAliveOptions
-	connectionPool         *ConnectionPool
-	unixSocketPath         string
-	encoding               string
-	encodingErrors         string
-	charset                string
-	errors                 []error
-	decodeResponses        bool
-	retryOnTimeout         bool
-	retryOnError           []error
-	sslKeyFile             string
-	sslCertFile            string
-	sslCertReqs            string
-	sslCaCerts             string
-	sslCaPath              string
-	sslCaData              []byte
-	sslCheckhostname       bool
-	sslPassword            string
-	sslValidateOcsp        bool
-	sslValidateOcspstapled bool
-	sslOcspContext         interface{} // this might need a more specific type
-	sslocspexpectedcert    []byte
-	maxconnections         int
-	singleConnectionClient bool
-	healthcheckInterval    time.Duration
-	clientname             string
-	libname                string
-	libversion             string
-	retry                  *RetryOptions
-	redisConnectFunc       RedisConnectFunc
-	credentialProvider     CredentialProvider
-	protocol               int
+	host                    string
+	port                    int
+	db                      int
+	username                string
+	password                string
+	ssl                     bool
+	socketTimeout           time.Duration //timeout for
+	socketConnectTimeout    time.Duration //timeout for connecting to indicated host and port
+	socketKeepAliveInterval time.Duration
+	connectionPool          *ConnectionPool
+	encoding                string
+	encodingErrors          string
+	charset                 string
+	errors                  []error
+	decodeResponses         bool
+	retryOnTimeout          bool
+	retryOnError            []error
+	sslKeyFile              string
+	sslCertFile             string
+	sslCertReqs             string
+	sslCaCerts              string
+	sslCaPath               string
+	sslCaData               []byte
+	sslCheckhostname        bool
+	sslPassword             string
+	sslValidateOcsp         bool
+	sslValidateOcspstapled  bool
+	sslOcspContext          interface{} // this might need a more specific type
+	sslocspexpectedcert     []byte
+	maxconnections          int
+	singleConnectionClient  bool
+	healthcheckInterval     time.Duration
+	clientname              string
+	libname                 string
+	libversion              string
+	retry                   *RetryOptions
+	redisConnectFunc        RedisConnectFunc
+	credentialProvider      CredentialProvider
+	protocol                int
 }
 
 // TODO: Fill in
-type KeepAliveOptions struct{}
 type RetryOptions struct{}
 type CredentialProvider struct{}
 type ConnectionPool struct{}
@@ -250,6 +248,24 @@ func WithPassword(password string) OptsFunc {
 	}
 }
 
+func WithSocketConnectTimeout(duration time.Duration) OptsFunc {
+	return func(o *Opts) {
+		o.socketConnectTimeout = duration
+	}
+}
+
+func WithSocketTimeout(duration time.Duration) OptsFunc {
+	return func(o *Opts) {
+		o.socketTimeout = duration
+	}
+}
+
+func WithSocketKeepAlive(enabled bool, interval time.Duration) OptsFunc {
+	return func(o *Opts) {
+		o.socketKeepAliveInterval = interval
+	}
+}
+
 func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 
 	defaultOpts := defaultOptions()
@@ -265,10 +281,19 @@ func NewClient(host string, port int, opts ...OptsFunc) (*RedisClient, error) {
 	if defaultOpts.redisConnectFunc != nil {
 		conn, err = defaultOpts.redisConnectFunc()
 	} else {
-		dial := net.Dialer{
-			Timeout: defaultOpts.socketConnectTimeout,
+		if defaultOpts.socketConnectTimeout > 0 && defaultOpts.socketTimeout > 0 {
+			ctx, cancel := context.WithTimeout(context.Background(), defaultOpts.socketTimeout)
+			defer cancel()
+			dialer := &net.Dialer{
+				Timeout: defaultOpts.socketConnectTimeout,
+			}
+			if defaultOpts.socketKeepAliveInterval > 0 {
+				dialer.KeepAlive = defaultOpts.socketKeepAliveInterval
+			}
+			conn, err = dialer.DialContext(ctx, "tcp", fmt.Sprintf("%s:%d", host, port))
+		} else {
+			conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 		}
-		conn, err = dial.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
 	}
 
 	if err != nil {
@@ -502,7 +527,7 @@ func (r *RedisClient) LPop(listname string) (interface{}, error) {
 	return resp, nil
 }
 func (r *RedisClient) Set(key string, val string) (interface{}, error) {
-	resp, err := r.Do("SET", val)
+	resp, err := r.Do("SET", key, val)
 	if err != nil {
 		return nil, fmt.Errorf("error while sending set command %w", err)
 	}
