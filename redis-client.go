@@ -91,18 +91,32 @@ type LPopOpts struct {
 	count int64
 }
 
+type SScanOpts struct {
+	Match string
+	Count int
+}
+
+type LPosOpts struct {
+	rank   int64
+	count  int64
+	maxlen int64
+}
+
+type RPopOpts struct {
+	count int64
+}
+
+type LPosOptsFunc func(*LPosOpts)
+
 type LPopFunc func(*LPopOpts)
+
+type RPopOptsFunc func(*RPopOpts)
 
 type OptsFunc func(*Opts)
 
 type SetOptsFunc func(*SetOpts)
 
 type HExpireOptsFunc func(*HExpireOpts)
-
-type SScanOpts struct {
-	Match string
-	Count int
-}
 
 type SScanOptsFunc func(*SScanOpts)
 
@@ -218,8 +232,43 @@ func WithCountLPop(count int64) LPopFunc {
 	}
 }
 
+func WithCountLPos(count int64) LPosOptsFunc {
+	return func(o *LPosOpts) {
+		o.count = count
+	}
+}
+
+func WithRankLPos(rank int64) LPosOptsFunc {
+	return func(o *LPosOpts) {
+		o.rank = rank
+	}
+}
+
+func WithMaxLenLPos(maxlen int64) LPosOptsFunc {
+	return func(o *LPosOpts) {
+		o.maxlen = maxlen
+	}
+}
+
+func WithCountRPop(count int64) RPopOptsFunc {
+	return func(o *RPopOpts) {
+		o.count = count
+	}
+}
+
+func defaultLPosOpts() LPosOpts {
+	return LPosOpts{
+		count: -1, // since count can be set to 0 to find all matches in the list, default is set to -1
+		//see https://redis.io/docs/latest/commands/lpos/
+	}
+}
+
 func defaultLPopOpts() LPopOpts {
 	return LPopOpts{}
+}
+
+func defaultRPopOpts() RPopOpts {
+	return RPopOpts{}
 }
 
 func defaultOptions() Opts {
@@ -934,6 +983,15 @@ func (r *RedisClient) HExpire(key string, seconds int64, fields []string, opts .
 	return resp, nil
 }
 
+// needs futher investigation
+func (r *RedisClient) BLMove(source string, destination string, wherefrom string, whereto string, timeout int64) (interface{}, error) {
+	resp, err := r.Do("BLMOVE", source, destination, wherefrom, whereto, strconv.Itoa(int(timeout)))
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending blmove command: %w", err)
+	}
+	return resp, nil
+}
+
 func (r *RedisClient) LIndex(key string, index string) (interface{}, error) {
 	resp, err := r.Do("LINDEX", key, index)
 	if err != nil {
@@ -968,7 +1026,7 @@ func (r *RedisClient) LMove(source string, destination string, wheresource strin
 
 // PUT ON HOLD, LOTS OF OPTIONAL PARAMETERS
 func (r *RedisClient) LMPop(source string, destination string, wheresource string, wheredestination string) (interface{}, error) {
-	resp, err := r.Do("LMOVE", source, destination, wheresource, wheredestination)
+	resp, err := r.Do("LMPOP", source, destination, wheresource, wheredestination)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending lmove command: %w", err)
 	}
@@ -993,6 +1051,164 @@ func (r *RedisClient) LPop(listname string, opts ...LPopFunc) (interface{}, erro
 
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LPos(key string, element string, opts ...LPosOptsFunc) (interface{}, error) {
+
+	defaultOpts := defaultLPosOpts()
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	commands_args := []string{"LPOS", key, element}
+
+	if defaultOpts.rank != 0 {
+		commands_args = append(commands_args, "RANK", strconv.Itoa(int(defaultOpts.rank)))
+	}
+	if defaultOpts.count != -1 {
+		commands_args = append(commands_args, "COUNT", strconv.Itoa(int(defaultOpts.count)))
+	}
+	if defaultOpts.maxlen != 0 {
+		commands_args = append(commands_args, "MAXLEN", strconv.Itoa(int(defaultOpts.maxlen)))
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lpos command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LPush(key string, element string, elements ...string) (interface{}, error) {
+	commands_args := []string{"LPUSH", key, element}
+
+	commands_args = append(commands_args, elements...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lpush command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LPushx(key string, element string, elements ...string) (interface{}, error) {
+	commands_args := []string{"LPUSHX", key, element}
+
+	commands_args = append(commands_args, elements...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lpushx command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LRange(key string, start string, stop string) (interface{}, error) {
+	commands_args := []string{"LRANGE", key, start, stop}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lrange command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LRem(key string, start int64, element string) (interface{}, error) {
+	commands_args := []string{"LREM", key, strconv.Itoa(int(start)), element}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lrem command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LSet(key string, index int64, element string) (interface{}, error) {
+	commands_args := []string{"LSET", key, strconv.Itoa(int(index)), element}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lset command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LTrim(key string, start int64, stop int64) (interface{}, error) {
+	commands_args := []string{"LTRIM", key, strconv.Itoa(int(start)), strconv.Itoa(int(stop))}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending ltrim command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) RPop(key string, opts ...RPopOptsFunc) (interface{}, error) {
+
+	defaultOpts := defaultRPopOpts()
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	commands_args := []string{"RPOP", key}
+
+	if defaultOpts.count > 0 {
+		commands_args = append(commands_args, strconv.Itoa(int(defaultOpts.count)))
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending rpop command: %w", err)
+	}
+	return resp, nil
+}
+
+// deprecated as of redis v6.2.0, see https://redis.io/docs/latest/commands/rpoplpush/
+func (r *RedisClient) RPopLPush(source string, destination string) (interface{}, error) {
+	commands_args := []string{"RPOPLPUSH", source, destination}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending rpoplpush command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) RPush(key string, element string, elements ...string) (interface{}, error) {
+	commands_args := []string{"RPUSH", key, element}
+
+	commands_args = append(commands_args, elements...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending rpush command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) RPushx(key string, element string, elements ...string) (interface{}, error) {
+	commands_args := []string{"RPUSHX", key, element}
+
+	commands_args = append(commands_args, elements...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending rpushx command: %w", err)
 	}
 	return resp, nil
 }
