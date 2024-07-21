@@ -87,6 +87,12 @@ type HExpireOpts struct {
 	Duration *time.Duration
 }
 
+type LPopOpts struct {
+	count int64
+}
+
+type LPopFunc func(*LPopOpts)
+
 type OptsFunc func(*Opts)
 
 type SetOptsFunc func(*SetOpts)
@@ -162,13 +168,13 @@ func (o *SetOpts) WithKeepTTL() *SetOpts {
 	return o
 }
 
-func WithMatch(pattern string) SScanOptsFunc {
+func WithMatchSScan(pattern string) SScanOptsFunc {
 	return func(opts *SScanOpts) {
 		opts.Match = pattern
 	}
 }
 
-func WithCount(count int) SScanOptsFunc {
+func WithCountSScan(count int) SScanOptsFunc {
 	return func(opts *SScanOpts) {
 		opts.Count = count
 	}
@@ -204,6 +210,16 @@ func WithLT() HExpireOptsFunc {
 	return func(o *HExpireOpts) {
 		o.LT = true
 	}
+}
+
+func WithCountLPop(count int64) LPopFunc {
+	return func(o *LPopOpts) {
+		o.count = count
+	}
+}
+
+func defaultLPopOpts() LPopOpts {
+	return LPopOpts{}
 }
 
 func defaultOptions() Opts {
@@ -518,14 +534,6 @@ func (r *RedisClient) Echo(val string) (interface{}, error) {
 	return resp, nil
 }
 
-// Lpop is unfinished
-func (r *RedisClient) LPop(listname string) (interface{}, error) {
-	resp, err := r.Do("LPOP", listname)
-	if err != nil {
-		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
-	}
-	return resp, nil
-}
 func (r *RedisClient) Set(key string, val string) (interface{}, error) {
 	resp, err := r.Do("SET", key, val)
 	if err != nil {
@@ -923,5 +931,68 @@ func (r *RedisClient) HExpire(key string, seconds int64, fields []string, opts .
 		return 0, fmt.Errorf("error while sending HEXPIRE command: %w", err)
 	}
 
+	return resp, nil
+}
+
+func (r *RedisClient) LIndex(key string, index string) (interface{}, error) {
+	resp, err := r.Do("LINDEX", key, index)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lindex command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LInsert(key string, where string, pivot string, element string) (interface{}, error) {
+	resp, err := r.Do("LINSERT", key, where, pivot, element)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending linsert command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LLen(key string) (interface{}, error) {
+	resp, err := r.Do("LLEN", key)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending llen command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LMove(source string, destination string, wheresource string, wheredestination string) (interface{}, error) {
+	resp, err := r.Do("LMOVE", source, destination, wheresource, wheredestination)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lmove command: %w", err)
+	}
+	return resp, nil
+}
+
+// PUT ON HOLD, LOTS OF OPTIONAL PARAMETERS
+func (r *RedisClient) LMPop(source string, destination string, wheresource string, wheredestination string) (interface{}, error) {
+	resp, err := r.Do("LMOVE", source, destination, wheresource, wheredestination)
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lmove command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) LPop(listname string, opts ...LPopFunc) (interface{}, error) {
+
+	defaultOpts := defaultLPopOpts()
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	commands_args := []string{"LPOP", listname}
+
+	if defaultOpts.count > 0 {
+		commands_args = append(commands_args, strconv.Itoa(int(defaultOpts.count)))
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending lpop command: %w", err)
+	}
 	return resp, nil
 }
