@@ -136,6 +136,17 @@ The client supports the following Redis commands:
 - LLEN
 - LMOVE
 - LMPOP - pending
+- LPOS
+- LPUSH
+- LPUSHX
+- LRANGE
+- LREM
+- LSET
+- LTRIM
+- RPOP
+- RPOPLPUSH - deprecated 
+- RPUSH
+- RPUSHX
 
 ### Set Operations
 - SADD
