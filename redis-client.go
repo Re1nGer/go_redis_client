@@ -1212,3 +1212,69 @@ func (r *RedisClient) RPushx(key string, element string, elements ...string) (in
 	}
 	return resp, nil
 }
+
+// Transactions
+func (r *RedisClient) Multi() error {
+	_, err := r.Do("MULTI")
+	return err
+}
+
+func (r *RedisClient) Exec() (interface{}, error) {
+	return r.Do("EXEC")
+}
+
+func (r *RedisClient) Discard() error {
+	_, err := r.Do("DISCARD")
+	return err
+}
+
+func (r *RedisClient) Watch(keys ...string) error {
+	args := append([]string{"WATCH"}, keys...)
+	_, err := r.Do(args...)
+	return err
+}
+
+func (r *RedisClient) Unwatch() error {
+	_, err := r.Do("UNWATCH")
+	return err
+}
+
+func (r *RedisClient) TxPipeline() *TxPipeline {
+	return &TxPipeline{client: r}
+}
+
+type TxPipeline struct {
+	client *RedisClient
+	cmds   [][]string
+}
+
+func (p *TxPipeline) Queue(args ...string) {
+	p.cmds = append(p.cmds, args)
+}
+
+func (p *TxPipeline) Exec() ([]interface{}, error) {
+	if err := p.client.Multi(); err != nil {
+		return nil, err
+	}
+
+	for _, cmd := range p.cmds {
+		if _, err := p.client.Do(cmd...); err != nil {
+			p.client.Discard()
+			return nil, err
+		}
+	}
+
+	result, err := p.client.Exec()
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Type assertion
+	results, ok := result.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unexpected result type from EXEC")
+	}
+
+	return results, nil
+}
