@@ -130,7 +130,12 @@ The client supports the following Redis commands:
 - EXISTS
 
 ### List Operations
-- LPOP (partially implemented)
+- LPOP
+- LINDEX
+- LINSERT
+- LLEN
+- LMOVE
+- LMPOP - pending
 
 ### Set Operations
 - SADD
