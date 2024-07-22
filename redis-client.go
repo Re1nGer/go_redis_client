@@ -68,6 +68,14 @@ type RetryOptions struct{}
 type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
+type LCSOptions struct {
+	LEN          bool
+	IDX          bool
+	MINMATCHLEN  int
+	WITHMATCHLEN bool
+}
+
+// LCSOptsFunc is a function type for setting LCS options
 type SetOpts struct {
 	NX      bool
 	XX      bool
@@ -105,20 +113,76 @@ type LPosOpts struct {
 type RPopOpts struct {
 	count int64
 }
+type GetexOpts struct {
+	EX      *time.Duration
+	PX      *time.Duration
+	EXAT    *time.Time
+	PXAT    *time.Time
+	Persist bool
+}
 
 type LPosOptsFunc func(*LPosOpts)
-
 type LPopFunc func(*LPopOpts)
-
 type RPopOptsFunc func(*RPopOpts)
-
 type OptsFunc func(*Opts)
-
 type SetOptsFunc func(*SetOpts)
-
 type HExpireOptsFunc func(*HExpireOpts)
-
 type SScanOptsFunc func(*SScanOpts)
+type GetexOptsFunc func(*GetexOpts)
+type LCSOptsFunc func(*LCSOptions)
+
+func WithLen() LCSOptsFunc {
+	return func(opts *LCSOptions) {
+		opts.LEN = true
+	}
+}
+
+func WithIDX() LCSOptsFunc {
+	return func(opts *LCSOptions) {
+		opts.IDX = true
+	}
+}
+
+func WithMinMatchLen(length int) LCSOptsFunc {
+	return func(opts *LCSOptions) {
+		opts.MINMATCHLEN = length
+	}
+}
+
+func WithMatchLen() LCSOptsFunc {
+	return func(opts *LCSOptions) {
+		opts.WITHMATCHLEN = true
+	}
+}
+
+func WithEX(seconds time.Duration) GetexOptsFunc {
+	return func(opts *GetexOpts) {
+		opts.EX = &seconds
+	}
+}
+
+func WithPX(milliseconds time.Duration) GetexOptsFunc {
+	return func(opts *GetexOpts) {
+		opts.PX = &milliseconds
+	}
+}
+
+func WithEXAT(timestamp time.Time) GetexOptsFunc {
+	return func(opts *GetexOpts) {
+		opts.EXAT = &timestamp
+	}
+}
+
+func WithPXAT(timestamp time.Time) GetexOptsFunc {
+	return func(opts *GetexOpts) {
+		opts.PXAT = &timestamp
+	}
+}
+func WithPersist() GetexOptsFunc {
+	return func(opts *GetexOpts) {
+		opts.Persist = true
+	}
+}
 
 func (o *SetOpts) WithNX() *SetOpts {
 	o.NX = true
@@ -510,6 +574,7 @@ func (r *RedisClient) Get(key string) (interface{}, error) {
 	return resp, nil
 }
 
+// refactor
 func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (interface{}, error) {
 	args := []string{"SET", key, val}
 
@@ -541,10 +606,9 @@ func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (int
 		return nil, err
 	}
 
-	// Handle the GET option
 	if opts.Get {
 		if resp == nil {
-			return nil, nil // Key didn't exist before
+			return nil, nil
 		}
 		str, ok := resp.(string)
 		if !ok {
@@ -553,13 +617,186 @@ func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (int
 		return str, nil
 	}
 
-	// Handle normal SET response
 	if resp == nil {
 		return nil, nil // SET NX/XX condition not met
 	}
 	_, ok := resp.(string)
 	if !ok {
 		return nil, fmt.Errorf("unexpected response type for SET: %T", resp)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Append(key string, val string) (interface{}, error) {
+	resp, err := r.Do("APPEND", key, val)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending append command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Decr(key string) (interface{}, error) {
+	resp, err := r.Do("DECR", key)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending decr command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Decrby(key string, decrement int64) (interface{}, error) {
+	resp, err := r.Do("DECRBY", key, strconv.Itoa(int(decrement)))
+	if err != nil {
+		return nil, fmt.Errorf("error while sending decrby command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Getdel(key string) (interface{}, error) {
+	resp, err := r.Do("GETDEL", key)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending getdel command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Getex(key string, opts ...GetexOptsFunc) (interface{}, error) {
+
+	options := &GetexOpts{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	args := []string{"GETEX", key}
+
+	if options.EX != nil {
+		args = append(args, "EX", strconv.FormatInt(int64(options.EX.Seconds()), 10))
+	} else if options.PX != nil {
+		args = append(args, "PX", strconv.FormatInt(options.PX.Milliseconds(), 10))
+	} else if options.EXAT != nil {
+		args = append(args, "EXAT", strconv.FormatInt(options.EXAT.Unix(), 10))
+	} else if options.PXAT != nil {
+		args = append(args, "PXAT", strconv.FormatInt(options.PXAT.UnixNano()/int64(time.Millisecond), 10))
+	} else if options.Persist {
+		args = append(args, "PERSIST")
+	}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending GETEX command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Getrange(key string, start int64, end int64) (interface{}, error) {
+	resp, err := r.Do("GETRANGE", key, strconv.Itoa(int(start)), strconv.Itoa(int(end)))
+	if err != nil {
+		return nil, fmt.Errorf("error while sending getrange command %w", err)
+	}
+	return resp, nil
+}
+
+// As of redis v6.20 it's deprecated, see https://redis.io/docs/latest/commands/getset/
+func (r *RedisClient) Getset(key string, value string) (interface{}, error) {
+	resp, err := r.Do("GETSET", key, value)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending getset command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Incr(key string) (interface{}, error) {
+	resp, err := r.Do("INCR", key)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending incr command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Incrby(key string, increment int64) (interface{}, error) {
+	resp, err := r.Do("INCRBY", key, strconv.Itoa(int(increment)))
+	if err != nil {
+		return nil, fmt.Errorf("error while sending incrby command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Incrbyfloat(key string, increment int64) (interface{}, error) {
+	resp, err := r.Do("INCRBYFLOAT", key, strconv.Itoa(int(increment)))
+	if err != nil {
+		return nil, fmt.Errorf("error while sending incrbyfloat command %w", err)
+	}
+	return resp, nil
+}
+
+// not type safe
+func (r *RedisClient) LCS(key1 string, key2 string, opts ...LCSOptsFunc) (interface{}, error) {
+	options := &LCSOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	args := []string{"LCS", key1, key2}
+
+	if options.LEN {
+		args = append(args, "LEN")
+	}
+	if options.IDX {
+		args = append(args, "IDX")
+	}
+	if options.MINMATCHLEN > 0 {
+		args = append(args, "MINMATCHLEN", strconv.Itoa(options.MINMATCHLEN))
+	}
+	if options.WITHMATCHLEN {
+		args = append(args, "WITHMATCHLEN")
+	}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending lcs command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) MGet(key string, keys ...string) (interface{}, error) {
+	command_args := []string{"MGET", key}
+	command_args = append(command_args, keys...)
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending mget command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) MSet(key string, value string, keyvalues ...string) (interface{}, error) {
+	command_args := []string{"MSET", key, value}
+	command_args = append(command_args, keyvalues...)
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending mset command %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Msetnx(key string, value string, keyvalues ...string) (interface{}, error) {
+	command_args := []string{"MSETNX", key, value}
+	command_args = append(command_args, keyvalues...)
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending msetnx command %w", err)
+	}
+	return resp, nil
+}
+
+//deprecated
+func (r *RedisClient) Psetex(key string, milliseconds int64, value string) (interface{}, error) {
+	command_args := []string{"PSETEX", key, strconv.Itoa(int(milliseconds)), value}
+	resp, err := r.Do(command_args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending psetex command %w", err)
 	}
 	return resp, nil
 }
@@ -591,6 +828,7 @@ func (r *RedisClient) Set(key string, val string) (interface{}, error) {
 	return resp, nil
 }
 
+// deprecated
 func (r *RedisClient) SetNx(key string, val string) (interface{}, error) {
 	resp, err := r.Do("SETNX", key, val)
 	if err != nil {
@@ -599,8 +837,8 @@ func (r *RedisClient) SetNx(key string, val string) (interface{}, error) {
 	return resp, nil
 }
 
-func (r *RedisClient) SetRange(key string, offset int, val string) (interface{}, error) {
-	resp, err := r.Do("SETRANGE", key, strconv.Itoa(offset), val)
+func (r *RedisClient) SetRange(key string, offset int64, val string) (interface{}, error) {
+	resp, err := r.Do("SETRANGE", key, strconv.Itoa(int(offset)), val)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending setrange command: %w", err)
 	}
@@ -611,6 +849,14 @@ func (r *RedisClient) StrLen(key string) (interface{}, error) {
 	resp, err := r.Do("STRLEN", key)
 	if err != nil {
 		return nil, fmt.Errorf("erorr while sending strlen command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Substr(key string, start int64, end int64) (interface{}, error) {
+	resp, err := r.Do("STRLEN", key, strconv.Itoa(int(start)), strconv.Itoa(int(end)))
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending substr command: %w", err)
 	}
 	return resp, nil
 }

@@ -126,8 +126,21 @@ The client supports the following Redis commands:
 - SETNX
 - SETRANGE
 - STRLEN
-- ECHO
-- EXISTS
+- APPEND
+- DECR
+- DECRBY
+- GETDEL
+- GETEX
+- GETRANGE
+- GETSET
+- INCR
+- INCRBY
+- INCRYBYFLOAT
+- LCS
+- MGET
+- MSET
+- MSETNX
+- PSETEX
 
 ### List Operations
 - LPOP
