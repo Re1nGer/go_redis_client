@@ -68,6 +68,13 @@ type RetryOptions struct{}
 type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
+
+type BitcountOpts struct {
+	start int
+	end   int
+	bit   bool
+}
+
 type LCSOptions struct {
 	LEN          bool
 	IDX          bool
@@ -130,6 +137,20 @@ type HExpireOptsFunc func(*HExpireOpts)
 type SScanOptsFunc func(*SScanOpts)
 type GetexOptsFunc func(*GetexOpts)
 type LCSOptsFunc func(*LCSOptions)
+type BitcountOptsFunc func(*BitcountOpts)
+
+func WithStartEnd(start int, end int) BitcountOptsFunc {
+	return func(opts *BitcountOpts) {
+		opts.start = start
+		opts.end = end
+	}
+}
+
+func WithBit(bit bool) BitcountOptsFunc {
+	return func(opts *BitcountOpts) {
+		opts.bit = bit
+	}
+}
 
 func WithLen() LCSOptsFunc {
 	return func(opts *LCSOptions) {
@@ -791,7 +812,7 @@ func (r *RedisClient) Msetnx(key string, value string, keyvalues ...string) (int
 	return resp, nil
 }
 
-//deprecated
+// deprecated
 func (r *RedisClient) Psetex(key string, milliseconds int64, value string) (interface{}, error) {
 	command_args := []string{"PSETEX", key, strconv.Itoa(int(milliseconds)), value}
 	resp, err := r.Do(command_args...)
@@ -1450,6 +1471,33 @@ func (r *RedisClient) RPushx(key string, element string, elements ...string) (in
 	commands_args := []string{"RPUSHX", key, element}
 
 	commands_args = append(commands_args, elements...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("erorr while sending rpushx command: %w", err)
+	}
+	return resp, nil
+}
+
+func (r *RedisClient) Bitcount(key string, opts ...BitcountOptsFunc) (interface{}, error) {
+
+	defaultOpts := BitcountOpts{
+		start: -1,
+		end:   -1,
+	}
+
+	for _, fn := range opts {
+		fn(&defaultOpts)
+	}
+
+	commands_args := []string{"BITCOUNT", key}
+
+	if defaultOpts.start != -1 && defaultOpts.end != -1 {
+		commands_args = append(commands_args, strconv.Itoa(defaultOpts.start), strconv.Itoa(defaultOpts.end))
+	}
+
+	//handle bit/byte
 
 	resp, err := r.Do(commands_args...)
 
