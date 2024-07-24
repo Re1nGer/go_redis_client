@@ -1621,3 +1621,51 @@ func (r *RedisClient) Setbit(key string, offset int64, value string) (interface{
 }
 
 //TODO: implement BITPOS
+
+func (r *RedisClient) Copy(key string, destination string) (interface{}, error) {
+	args := []string{"COPY", key, destination}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending copy command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Keys(pattern string) (interface{}, error) {
+	args := []string{"KEYS", pattern}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending keys command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Move(key string, db string) (interface{}, error) {
+	args := []string{"MOVE", key, db}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending move command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Persist(key string) (interface{}, error) {
+	args := []string{"PERSIST", key}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending persist command: %w", err)
+	}
+
+	return resp, nil
+}
