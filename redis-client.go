@@ -127,6 +127,23 @@ type GetexOpts struct {
 	PXAT    *time.Time
 	Persist bool
 }
+type BitfieldOperation struct {
+	Op       string // GET, SET, or INCRBY
+	Encoding string // i for signed, u for unsigned, followed by bit count
+	Offset   int    // Bit offset
+	Value    int64  // Used for SET and INCRBY operations
+}
+
+type BitfieldRoOperation struct {
+	Encoding string // i for signed, u for unsigned, followed by bit count
+	Offset   int    // Bit offset
+	Value    int64  // Used for SET and INCRBY operations
+}
+
+// BitfieldOptions represents additional options for the BITFIELD command
+type BitfieldOptions struct {
+	Overflow string // WRAP, SAT, or FAIL
+}
 
 type LPosOptsFunc func(*LPosOpts)
 type LPopFunc func(*LPopOpts)
@@ -138,6 +155,18 @@ type SScanOptsFunc func(*SScanOpts)
 type GetexOptsFunc func(*GetexOpts)
 type LCSOptsFunc func(*LCSOptions)
 type BitcountOptsFunc func(*BitcountOpts)
+
+func BitfieldGet(encoding string, offset int) BitfieldOperation {
+	return BitfieldOperation{Op: "GET", Encoding: encoding, Offset: offset}
+}
+
+func BitfieldSet(encoding string, offset int, value int64) BitfieldOperation {
+	return BitfieldOperation{Op: "SET", Encoding: encoding, Offset: offset, Value: value}
+}
+
+func BitfieldIncrBy(encoding string, offset int, increment int64) BitfieldOperation {
+	return BitfieldOperation{Op: "INCRBY", Encoding: encoding, Offset: offset, Value: increment}
+}
 
 func WithStartEnd(start int, end int) BitcountOptsFunc {
 	return func(opts *BitcountOpts) {
@@ -1514,3 +1543,57 @@ func (r *RedisClient) Bitcount(key string, opts ...BitcountOptsFunc) (interface{
 	}
 	return resp, nil
 }
+
+func (r *RedisClient) Bitfield(key string, operations []BitfieldOperation, opts *BitfieldOptions) (interface{}, error) {
+	args := []string{"BITFIELD", key}
+
+	for _, op := range operations {
+		args = append(args, op.Op, op.Encoding, strconv.Itoa(op.Offset))
+		if op.Op == "SET" || op.Op == "INCRBY" {
+			args = append(args, strconv.FormatInt(op.Value, 10))
+		}
+	}
+
+	if opts != nil && opts.Overflow != "" {
+		args = append(args, "OVERFLOW", opts.Overflow)
+	}
+
+	resp, err := r.Do(args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending BITFIELD command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Bitfieldro(key string, operations []BitfieldRoOperation) (interface{}, error) {
+	args := []string{"BITFIELD_RO", key}
+
+	for _, op := range operations {
+		args = append(args, op.Encoding, strconv.Itoa(op.Offset))
+	}
+
+	resp, err := r.Do(args...)
+	if err != nil {
+		return nil, fmt.Errorf("error while sending bitfield_ro command: %w", err)
+	}
+
+	return resp, nil
+}
+
+// bitwiseop <AND | OR | XOR | NOT>, see https://redis.io/docs/latest/commands/bitop/
+func (r *RedisClient) Bitop(bitwiseop string, keys ...string) (interface{}, error) {
+	args := []string{"BITOP", bitwiseop}
+
+	args = append(args, keys...)
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending bitop command: %w", err)
+	}
+
+	return resp, nil
+}
+
+
