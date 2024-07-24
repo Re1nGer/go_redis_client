@@ -72,7 +72,7 @@ type RedisConnectFunc func() (net.Conn, error)
 type BitcountOpts struct {
 	start int
 	end   int
-	bit   bool
+	bit   string
 }
 
 type LCSOptions struct {
@@ -146,7 +146,7 @@ func WithStartEnd(start int, end int) BitcountOptsFunc {
 	}
 }
 
-func WithBit(bit bool) BitcountOptsFunc {
+func WithBit(bit string) BitcountOptsFunc {
 	return func(opts *BitcountOpts) {
 		opts.bit = bit
 	}
@@ -1495,6 +1495,14 @@ func (r *RedisClient) Bitcount(key string, opts ...BitcountOptsFunc) (interface{
 
 	if defaultOpts.start != -1 && defaultOpts.end != -1 {
 		commands_args = append(commands_args, strconv.Itoa(defaultOpts.start), strconv.Itoa(defaultOpts.end))
+	}
+
+	if defaultOpts.bit == "BYTE" {
+		commands_args = append(commands_args, "BYTE")
+	}
+
+	if defaultOpts.bit == "BITE" {
+		commands_args = append(commands_args, "BITE")
 	}
 
 	//handle bit/byte
