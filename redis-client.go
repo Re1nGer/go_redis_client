@@ -1596,4 +1596,28 @@ func (r *RedisClient) Bitop(bitwiseop string, keys ...string) (interface{}, erro
 	return resp, nil
 }
 
+func (r *RedisClient) Getbit(key string, offset int64) (interface{}, error) {
+	args := []string{"GETBIT", key, strconv.Itoa(int(offset))}
 
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending getbit command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Setbit(key string, offset int64, value string) (interface{}, error) {
+	args := []string{"SETBIT", key, strconv.Itoa(int(offset)), value}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending setbit command: %w", err)
+	}
+
+	return resp, nil
+}
+
+//TODO: implement BITPOS

@@ -195,6 +195,14 @@ The client supports the following Redis commands:
 - HSTRLEN
 - HEXPIRE
 
+### Bitmap
+- BITCOUNT
+- BITFIELD
+- BITFIELD_RO
+- BITOP
+- GETBIT
+- SETBIT
+
 ### Key Operations
 - DEL
 - DUMP
