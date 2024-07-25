@@ -1669,3 +1669,92 @@ func (r *RedisClient) Persist(key string) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Clientcaching(caching string) (interface{}, error) {
+
+	args := []string{"CLIENT", "CACHING", caching}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientcaching command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientgetname() (interface{}, error) {
+
+	args := []string{"CLIENT", "GETNAME"}
+
+	resp, err := r.Do(args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientgetname command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientgetredir() (interface{}, error) {
+
+	resp, err := r.Do("CLIENT", "GETREDIR")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientgetredir command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientid() (interface{}, error) {
+
+	resp, err := r.Do("CLIENT", "ID")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientid command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientinfo() (interface{}, error) {
+
+	resp, err := r.Do("CLIENT", "INFO")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientinfo command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientkill(args ...string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "KILL"}
+
+	commands_args = append(commands_args, args...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientkill command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientlist(args ...string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "LIST"}
+
+	commands_args = append(commands_args, args...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientlist command: %w", err)
+	}
+
+	return resp, nil
+}
