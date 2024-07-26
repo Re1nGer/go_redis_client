@@ -269,7 +269,7 @@ Contributions to this Redis client are welcome! Here's how you can contribute:
 
 ## License
 
-This Redis client is released under the MIT License. See the [LICENSE](LICENSE) file for details.
+This Redis client is released under the MIT License. See the [LICENSE](https://github.com/Re1nGer/go_redis_client/blob/master/LICENSE) file for details.
 
 ## Disclaimer
 
