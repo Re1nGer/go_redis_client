@@ -69,10 +69,28 @@ type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
 
+type ClientUnblockOpts struct {
+	timeout bool
+	error   bool
+}
+
 type BitcountOpts struct {
 	start int
 	end   int
 	bit   string
+}
+
+type ClientUnblockOptsFunc func(*ClientUnblockOpts)
+type ClientTrackingOption func(*clientTrackingOptions)
+
+type clientTrackingOptions struct {
+	on       bool
+	redirect int
+	prefix   []string
+	bcast    bool
+	optin    bool
+	optout   bool
+	noLoop   bool
 }
 
 type LCSOptions struct {
@@ -168,10 +186,69 @@ func BitfieldIncrBy(encoding string, offset int, increment int64) BitfieldOperat
 	return BitfieldOperation{Op: "INCRBY", Encoding: encoding, Offset: offset, Value: increment}
 }
 
+func WithTimeout() ClientUnblockOptsFunc {
+	return func(opts *ClientUnblockOpts) {
+		opts.timeout = true
+	}
+}
+
+func WithError() ClientUnblockOptsFunc {
+	return func(opts *ClientUnblockOpts) {
+		opts.error = true
+	}
+}
+
 func WithStartEnd(start int, end int) BitcountOptsFunc {
 	return func(opts *BitcountOpts) {
 		opts.start = start
 		opts.end = end
+	}
+}
+func WithOn() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.on = true
+	}
+}
+
+func WithOff() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.on = false
+	}
+}
+
+func WithRedirect(clientID int) ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.redirect = clientID
+	}
+}
+
+func WithPrefix(prefix ...string) ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.prefix = append(o.prefix, prefix...)
+	}
+}
+
+func WithBcast() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.bcast = true
+	}
+}
+
+func WithOptin() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.optin = true
+	}
+}
+
+func WithOptout() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.optout = true
+	}
+}
+
+func WithNoLoop() ClientTrackingOption {
+	return func(o *clientTrackingOptions) {
+		o.noLoop = true
 	}
 }
 
@@ -1754,6 +1831,212 @@ func (r *RedisClient) Clientlist(args ...string) (interface{}, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientlist command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientnoevict(evict string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "NO-EVICT", evict}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientnoevict command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientnotouch(touch string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "NO-TOUCH", touch}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientnotouch command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientpause(mode string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "PAUSE", "timeout", mode}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientpause command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientreply(mode string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "REPLY", mode}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientreply command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientsetinfo(attribute string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "SETINFO", attribute}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientsetinfo command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientsetname(connectionname string) (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "SETNAME", connectionname}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending connectionname command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clienttracking(opts ...ClientTrackingOption) (interface{}, error) {
+
+	options := &clientTrackingOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	command_args := []string{"CLIENT", "TRACKING"}
+
+	if options.on {
+		command_args = append(command_args, "ON")
+	} else {
+		command_args = append(command_args, "OFF")
+	}
+
+	if options.redirect != 0 {
+		command_args = append(command_args, "REDIRECT", strconv.Itoa(options.redirect))
+	}
+
+	for _, prefix := range options.prefix {
+		command_args = append(command_args, "PREFIX", prefix)
+	}
+
+	if options.bcast {
+		command_args = append(command_args, "BCAST")
+	}
+
+	if options.optin {
+		command_args = append(command_args, "OPTIN")
+	}
+
+	if options.optout {
+		command_args = append(command_args, "OPTOUT")
+	}
+
+	if options.noLoop {
+		command_args = append(command_args, "NOLOOP")
+	}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clienttracking command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clienttrackinginfo() (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "TRACKINGINFO"}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clienttrackinginfo command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientunblock(clientid int64, opts ...ClientUnblockOptsFunc) (interface{}, error) {
+
+	defaultOpts := &ClientUnblockOpts{}
+
+	for _, opt := range opts {
+		opt(defaultOpts)
+	}
+
+	commands_args := []string{"CLIENT", "UNBLOCK ", strconv.Itoa(int(clientid))}
+
+	if defaultOpts.error {
+		commands_args = append(commands_args, "ERROR")
+	}
+
+	if defaultOpts.timeout {
+		commands_args = append(commands_args, "TIMEOUT")
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientunblock command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Clientunpause() (interface{}, error) {
+
+	commands_args := []string{"CLIENT", "UNPAUSE"}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending clientunpause command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Ping(message string) (interface{}, error) {
+
+	commands_args := []string{"PING", message}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending ping command: %w", err)
+	}
+
+	return resp, nil
+}
+
+// As of Redis v7.2.0 the command is deprecated, see https://redis.io/docs/latest/commands/quit/
+func (r *RedisClient) Quit(message string) (interface{}, error) {
+
+	commands_args := []string{"QUIT", message}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending quit command: %w", err)
 	}
 
 	return resp, nil

@@ -207,6 +207,29 @@ The client supports the following Redis commands:
 - DEL
 - DUMP
 
+### Connection Management
+- AUTH
+- CLIENT CACHING
+- CLIENT GETNAME
+- CLIENT GETREDIR
+- CLIENT ID
+- CLIENT INFO
+- CLIENT KILL
+- CLIENT LIST
+- CLIENT NO-NOEVICT
+- CLIENT NO-TOUCH
+- CLIENT PAUSE
+- CLIENT REPLY
+- CLIENT SETINFO
+- CLIENT SETNAME
+- CLIENT TRACKING
+- CLIENT TRACKINGINFO
+- CLIENT UNBLOCK
+- CLIENT UNPAUSE
+- ECHO
+- PING
+- QUIT (deprecated)
+
 More commands will be added in future updates.
 
 ## Configuration Options
