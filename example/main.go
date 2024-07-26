@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	r "github.com/re1nger/go_redis_client"
+	r "github.com/Re1nGer/go_redis_client"
 )
 
 func main() {
