@@ -311,66 +311,74 @@ func WithPersist() GetexOptsFunc {
 	}
 }
 
-func (o *SetOpts) WithNX() *SetOpts {
-	o.NX = true
-	o.XX = false // NX and XX are mutually exclusive
-	return o
+func WithNXSet() SetOptsFunc {
+	return func(o *SetOpts) {
+		o.NX = true
+		o.XX = false // NX and XX are mutually exclusive
+	}
 }
 
-func (o *SetOpts) WithXX() *SetOpts {
-	o.XX = true
-	o.NX = false // NX and XX are mutually exclusive
-	return o
+func WithXXSet() SetOptsFunc {
+	return func(o *SetOpts) {
+		o.XX = true
+		o.NX = false // NX and XX are mutually exclusive
+	}
 }
 
-func (o *SetOpts) WithGet() *SetOpts {
-	o.Get = true
-	return o
+func WithGet() SetOptsFunc {
+	return func(o *SetOpts) {
+		o.Get = true
+	}
 }
 
-func (o *SetOpts) WithEX(seconds int64) *SetOpts {
-	o.EX = seconds
-	o.PX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
+func WithEXSet(seconds int64) SetOptsFunc {
+	return func(o *SetOpts) {
+		o.EX = seconds
+		o.PX = 0
+		o.EXAT = nil
+		o.PXAT = nil
+		o.KeepTTL = false
+	}
 }
 
-func (o *SetOpts) WithPX(milliseconds int64) *SetOpts {
-	o.PX = milliseconds
-	o.EX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
+func WithPXSet(milliseconds int64) SetOptsFunc {
+	return func(o *SetOpts) {
+		o.PX = milliseconds
+		o.EX = 0
+		o.EXAT = nil
+		o.PXAT = nil
+		o.KeepTTL = false
+	}
 }
 
-func (o *SetOpts) WithEXAT(timestamp time.Time) *SetOpts {
-	o.EXAT = &timestamp
-	o.EX = 0
-	o.PX = 0
-	o.PXAT = nil
-	o.KeepTTL = false
-	return o
+func WithEXATSet(timestamp time.Time) SetOptsFunc {
+	return func(o *SetOpts) {
+		o.EXAT = &timestamp
+		o.EX = 0
+		o.PX = 0
+		o.PXAT = nil
+		o.KeepTTL = false
+	}
 }
 
-func (o *SetOpts) WithPXAT(timestamp time.Time) *SetOpts {
-	o.PXAT = &timestamp
-	o.EX = 0
-	o.PX = 0
-	o.EXAT = nil
-	o.KeepTTL = false
-	return o
+func WithPXATSet(timestamp time.Time) SetOptsFunc {
+	return func(o *SetOpts) {
+		o.PXAT = &timestamp
+		o.EX = 0
+		o.PX = 0
+		o.EXAT = nil
+		o.KeepTTL = false
+	}
 }
 
-func (o *SetOpts) WithKeepTTL() *SetOpts {
-	o.KeepTTL = true
-	o.EX = 0
-	o.PX = 0
-	o.EXAT = nil
-	o.PXAT = nil
-	return o
+func WithKeepTTL() SetOptsFunc {
+	return func(o *SetOpts) {
+		o.KeepTTL = true
+		o.EX = 0
+		o.PX = 0
+		o.EXAT = nil
+		o.PXAT = nil
+	}
 }
 
 func WithMatchSScan(pattern string) SScanOptsFunc {
@@ -702,28 +710,34 @@ func (r *RedisClient) Get(key string) (interface{}, error) {
 }
 
 // refactor
-func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (interface{}, error) {
+func (r *RedisClient) Set(key string, val string, opts ...SetOptsFunc) (interface{}, error) {
 	args := []string{"SET", key, val}
 
-	if opts.NX {
+	defaultOpts := &SetOpts{}
+
+	for _, opt := range opts {
+		opt(defaultOpts)
+	}
+
+	if defaultOpts.NX {
 		args = append(args, "NX")
-	} else if opts.XX {
+	} else if defaultOpts.XX {
 		args = append(args, "XX")
 	}
 
-	if opts.Get {
+	if defaultOpts.Get {
 		args = append(args, "GET")
 	}
 
-	if opts.EX != 0 {
-		args = append(args, "EX", strconv.Itoa(int(opts.EX))) // set amount of seconds
-	} else if opts.PX != 0 {
-		args = append(args, "PX", strconv.FormatInt(int64(opts.PX), 10)) // set amount of milliseconds
-	} else if opts.EXAT != nil {
-		args = append(args, "EXAT", strconv.FormatInt(opts.EXAT.Unix(), 10)) //UNIX timestamp with seconds
-	} else if opts.PXAT != nil {
-		args = append(args, "PXAT", strconv.FormatInt(opts.PXAT.UnixNano()/int64(time.Millisecond), 10)) //UNIX timestamp with milliseconds
-	} else if opts.KeepTTL {
+	if defaultOpts.EX != 0 {
+		args = append(args, "EX", strconv.Itoa(int(defaultOpts.EX))) // set amount of seconds
+	} else if defaultOpts.PX != 0 {
+		args = append(args, "PX", strconv.FormatInt(int64(defaultOpts.PX), 10)) // set amount of milliseconds
+	} else if defaultOpts.EXAT != nil {
+		args = append(args, "EXAT", strconv.FormatInt(defaultOpts.EXAT.Unix(), 10)) //UNIX timestamp with seconds
+	} else if defaultOpts.PXAT != nil {
+		args = append(args, "PXAT", strconv.FormatInt(defaultOpts.PXAT.UnixNano()/int64(time.Millisecond), 10)) //UNIX timestamp with milliseconds
+	} else if defaultOpts.KeepTTL {
 		args = append(args, "KEEPTTL")
 	}
 
@@ -733,7 +747,7 @@ func (r *RedisClient) SetWithOptions(key string, val string, opts *SetOpts) (int
 		return nil, err
 	}
 
-	if opts.Get {
+	if defaultOpts.Get {
 		if resp == nil {
 			return nil, nil
 		}
@@ -943,14 +957,6 @@ func (r *RedisClient) Echo(val string) (interface{}, error) {
 	resp, err := r.Do("ECHO", val)
 	if err != nil {
 		return nil, fmt.Errorf("error while sending echo command %w", err)
-	}
-	return resp, nil
-}
-
-func (r *RedisClient) Set(key string, val string) (interface{}, error) {
-	resp, err := r.Do("SET", key, val)
-	if err != nil {
-		return nil, fmt.Errorf("error while sending set command %w", err)
 	}
 	return resp, nil
 }
