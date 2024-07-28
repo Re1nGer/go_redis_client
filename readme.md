@@ -18,7 +18,7 @@ This is a lightweight, feature-rich Redis client for Go. It provides a simple an
 To install the Redis client, use the following command:
 
 ```
-go get github.com/re1nger/redis-client-go
+go get github.com/Re1nGer/go_redis_client@v1.2.0
 ```
 
 ## Usage
