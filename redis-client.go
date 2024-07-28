@@ -2010,9 +2010,7 @@ func (r *RedisClient) Clientunblock(clientid int64, opts ...ClientUnblockOptsFun
 
 func (r *RedisClient) Clientunpause() (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "UNPAUSE"}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "UNPAUSE")
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientunpause command: %w", err)
