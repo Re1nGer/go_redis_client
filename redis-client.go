@@ -1814,11 +1814,7 @@ func (r *RedisClient) Clientinfo() (interface{}, error) {
 
 func (r *RedisClient) Clientkill(args ...string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "KILL"}
-
-	commands_args = append(commands_args, args...)
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "KILL")
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientkill command: %w", err)
@@ -1829,11 +1825,7 @@ func (r *RedisClient) Clientkill(args ...string) (interface{}, error) {
 
 func (r *RedisClient) Clientlist(args ...string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "LIST"}
-
-	commands_args = append(commands_args, args...)
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "LIST")
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientlist command: %w", err)
@@ -1844,9 +1836,7 @@ func (r *RedisClient) Clientlist(args ...string) (interface{}, error) {
 
 func (r *RedisClient) Clientnoevict(evict string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "NO-EVICT", evict}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "NO-EVICT", evict)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientnoevict command: %w", err)
@@ -1857,9 +1847,7 @@ func (r *RedisClient) Clientnoevict(evict string) (interface{}, error) {
 
 func (r *RedisClient) Clientnotouch(touch string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "NO-TOUCH", touch}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "NO-TOUCH", touch)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientnotouch command: %w", err)
@@ -1868,11 +1856,10 @@ func (r *RedisClient) Clientnotouch(touch string) (interface{}, error) {
 	return resp, nil
 }
 
+// investigate
 func (r *RedisClient) Clientpause(mode string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "PAUSE", "timeout", mode}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "PAUSE", "timeout", mode)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientpause command: %w", err)
@@ -1883,9 +1870,7 @@ func (r *RedisClient) Clientpause(mode string) (interface{}, error) {
 
 func (r *RedisClient) Clientreply(mode string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "REPLY", mode}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "REPLY", mode)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientreply command: %w", err)
@@ -1896,9 +1881,7 @@ func (r *RedisClient) Clientreply(mode string) (interface{}, error) {
 
 func (r *RedisClient) Clientsetinfo(attribute string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "SETINFO", attribute}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "SETINFO", attribute)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientsetinfo command: %w", err)
@@ -1909,9 +1892,7 @@ func (r *RedisClient) Clientsetinfo(attribute string) (interface{}, error) {
 
 func (r *RedisClient) Clientsetname(connectionname string) (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "SETNAME", connectionname}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "SETNAME", connectionname)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending connectionname command: %w", err)
@@ -1970,9 +1951,7 @@ func (r *RedisClient) Clienttracking(opts ...ClientTrackingOption) (interface{},
 
 func (r *RedisClient) Clienttrackinginfo() (interface{}, error) {
 
-	commands_args := []string{"CLIENT", "TRACKINGINFO"}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("CLIENT", "TRACKINGINFO")
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clienttrackinginfo command: %w", err)
