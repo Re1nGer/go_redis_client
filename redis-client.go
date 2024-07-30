@@ -2014,9 +2014,7 @@ func (r *RedisClient) Ping(message string) (interface{}, error) {
 // As of Redis v7.2.0 the command is deprecated, see https://redis.io/docs/latest/commands/quit/
 func (r *RedisClient) Quit(message string) (interface{}, error) {
 
-	commands_args := []string{"QUIT", message}
-
-	resp, err := r.Do(commands_args...)
+	resp, err := r.Do("QUIT", message)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending quit command: %w", err)
@@ -2025,8 +2023,7 @@ func (r *RedisClient) Quit(message string) (interface{}, error) {
 	return resp, nil
 }
 
-//Transaction commands
-
+// Transaction commands
 func (r *RedisClient) Multi() error {
 	_, err := r.Do("MULTI")
 	return err
