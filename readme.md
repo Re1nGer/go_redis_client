@@ -100,7 +100,7 @@ The client provides a flexible way to use the SET command with various options:
 
 ```go
 opts := redisclient.NewSetOpts().WithNX().WithEX(60)
-result, err := client.SetWithOptions("mykey", "myvalue", opts)
+result, err := client.Set("mykey", "myvalue", opts)
 if err != nil {
     // Handle error
 }
