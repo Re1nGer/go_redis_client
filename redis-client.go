@@ -1680,9 +1680,8 @@ func (r *RedisClient) Bitop(bitwiseop string, keys ...string) (interface{}, erro
 }
 
 func (r *RedisClient) Getbit(key string, offset int64) (interface{}, error) {
-	args := []string{"GETBIT", key, strconv.Itoa(int(offset))}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("GETBIT", key, strconv.Itoa(int(offset)))
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending getbit command: %w", err)
@@ -1692,9 +1691,8 @@ func (r *RedisClient) Getbit(key string, offset int64) (interface{}, error) {
 }
 
 func (r *RedisClient) Setbit(key string, offset int64, value string) (interface{}, error) {
-	args := []string{"SETBIT", key, strconv.Itoa(int(offset)), value}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("SETBIT", key, strconv.Itoa(int(offset)), value)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending setbit command: %w", err)
@@ -1703,12 +1701,10 @@ func (r *RedisClient) Setbit(key string, offset int64, value string) (interface{
 	return resp, nil
 }
 
-//TODO: implement BITPOS
-
+// TODO: implement BITPOS
 func (r *RedisClient) Copy(key string, destination string) (interface{}, error) {
-	args := []string{"COPY", key, destination}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("COPY", key, destination)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending copy command: %w", err)
@@ -1718,9 +1714,8 @@ func (r *RedisClient) Copy(key string, destination string) (interface{}, error) 
 }
 
 func (r *RedisClient) Keys(pattern string) (interface{}, error) {
-	args := []string{"KEYS", pattern}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("KEYS", pattern)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending keys command: %w", err)
@@ -1730,9 +1725,8 @@ func (r *RedisClient) Keys(pattern string) (interface{}, error) {
 }
 
 func (r *RedisClient) Move(key string, db string) (interface{}, error) {
-	args := []string{"MOVE", key, db}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("MOVE", key, db)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending move command: %w", err)
@@ -1742,9 +1736,8 @@ func (r *RedisClient) Move(key string, db string) (interface{}, error) {
 }
 
 func (r *RedisClient) Persist(key string) (interface{}, error) {
-	args := []string{"PERSIST", key}
 
-	resp, err := r.Do(args...)
+	resp, err := r.Do("PERSIST", key)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending persist command: %w", err)
@@ -1755,9 +1748,7 @@ func (r *RedisClient) Persist(key string) (interface{}, error) {
 
 func (r *RedisClient) Clientcaching(caching string) (interface{}, error) {
 
-	args := []string{"CLIENT", "CACHING", caching}
-
-	resp, err := r.Do(args...)
+	resp, err := r.Do("CLIENT", "CACHING", caching)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending clientcaching command: %w", err)
