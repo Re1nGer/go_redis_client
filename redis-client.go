@@ -2079,3 +2079,36 @@ func (p *TxPipeline) Exec() ([]interface{}, error) {
 
 	return results, nil
 }
+
+// stream commands
+func (r *RedisClient) Xack(key string, group string, id string, ids ...string) (interface{}, error) {
+
+	commands_args := []string{"XACK", key, group, id}
+
+	commands_args = append(commands_args, ids...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending xack command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Xackdel(key string, group string, id string, ids ...string) (interface{}, error) {
+
+	commands_args := []string{"XDEL", key, group, id}
+
+	commands_args = append(commands_args, ids...)
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending xdel command: %w", err)
+	}
+
+	return resp, nil
+}
+
+//addX xtrim
