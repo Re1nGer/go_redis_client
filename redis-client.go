@@ -2112,3 +2112,4 @@ func (r *RedisClient) Xackdel(key string, group string, id string, ids ...string
 }
 
 //addX xtrim
+//update
