@@ -2159,3 +2159,31 @@ func (r *RedisClient) Acldeluser(username string, usernames ...string) (interfac
 
 	return resp, nil
 }
+
+func (r *RedisClient) Acldryrun(username string, command string, args ...string) (interface{}, error) {
+
+	command_args := []string{"ACL", "DRYRUN", username, command}
+
+	command_args = append(command_args, args...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending acldryrun command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Aclgenpass(bits string) (interface{}, error) {
+
+	command_args := []string{"ACL", "GENPASS", bits}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclgenpass command: %w", err)
+	}
+
+	return resp, nil
+}
