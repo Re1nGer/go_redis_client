@@ -2187,3 +2187,5 @@ func (r *RedisClient) Aclgenpass(bits string) (interface{}, error) {
 
 	return resp, nil
 }
+
+//add ci/cd tests on every build
