@@ -83,6 +83,12 @@ type BitcountOpts struct {
 type ClientUnblockOptsFunc func(*ClientUnblockOpts)
 type ClientTrackingOption func(*clientTrackingOptions)
 
+type AclCatOpts struct {
+	cat string
+}
+
+type AclCatOptsFunc func(*AclCatOpts)
+
 type clientTrackingOptions struct {
 	on       bool
 	redirect int
@@ -2113,3 +2119,28 @@ func (r *RedisClient) Xackdel(key string, group string, id string, ids ...string
 
 //addX xtrim
 //update
+
+//server management
+
+func (r *RedisClient) Aclcat(opts ...AclCatOptsFunc) (interface{}, error) {
+
+	options := &AclCatOpts{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	command_args := []string{"ACL", "CAT"}
+
+	if options.cat != "" {
+		command_args = append(command_args, options.cat)
+	}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclcat command: %w", err)
+	}
+
+	return resp, nil
+}
