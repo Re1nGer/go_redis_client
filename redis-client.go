@@ -2144,3 +2144,18 @@ func (r *RedisClient) Aclcat(opts ...AclCatOptsFunc) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Acldeluser(username string, usernames ...string) (interface{}, error) {
+
+	command_args := []string{"ACL", "DELUSER", username}
+
+	command_args = append(command_args, usernames...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending acldeluser command: %w", err)
+	}
+
+	return resp, nil
+}
