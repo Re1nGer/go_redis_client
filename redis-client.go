@@ -2188,4 +2188,44 @@ func (r *RedisClient) Aclgenpass(bits string) (interface{}, error) {
 	return resp, nil
 }
 
-//add ci/cd tests on every build
+//TODO: add ci/cd tests on every build
+
+func (r *RedisClient) Aclgetuser(username string) (interface{}, error) {
+
+	command_args := []string{"ACL", "GETUSER", username}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclgetuser command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Acllist() (interface{}, error) {
+
+	command_args := []string{"ACL", "LIST"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending acllist command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Aclload() (interface{}, error) {
+
+	command_args := []string{"ACL", "LOAD"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclload command: %w", err)
+	}
+
+	return resp, nil
+}
+
