@@ -35,5 +35,8 @@ jobs:
         fail_ci_if_error: true
 
     - name: Build
+      env:
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PASS: ${{ secrets.REDIS_PASS }}
       run: go build -v ./...
       
