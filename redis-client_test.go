@@ -2,6 +2,7 @@ package redisclient
 
 import (
 	"bytes"
+	"os"
 	"testing"
 )
 
@@ -42,4 +43,27 @@ func TestEncodeCommand(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRedisConnection(t *testing.T) {
+	// Fetch Redis connection details from environment variables
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPassword := os.Getenv("REDIS_PASS")
+
+	// Create Redis client
+	rdb, err := NewClient(redisHost, 15358, WithPassword(redisPassword))
+	if err != nil {
+		t.Log("error while connecting ")
+	}
+
+	// Create a context
+
+	// Test connection
+	_, err = rdb.Ping()
+
+	if err != nil {
+		t.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	t.Log("Redis connection test passed successfully")
 }

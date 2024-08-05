@@ -2000,9 +2000,9 @@ func (r *RedisClient) Clientunpause() (interface{}, error) {
 	return resp, nil
 }
 
-func (r *RedisClient) Ping(message string) (interface{}, error) {
+func (r *RedisClient) Ping() (interface{}, error) {
 
-	commands_args := []string{"PING", message}
+	commands_args := []string{"PING"}
 
 	resp, err := r.Do(commands_args...)
 
