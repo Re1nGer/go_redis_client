@@ -2229,3 +2229,56 @@ func (r *RedisClient) Aclload() (interface{}, error) {
 	return resp, nil
 }
 
+func (r *RedisClient) Aclsave() (interface{}, error) {
+
+	command_args := []string{"ACL", "SAVE"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclsave command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Aclsetuser(username string, rules ...string) (interface{}, error) {
+
+	command_args := []string{"ACL", "SETUSER", username}
+
+	command_args = append(command_args, rules...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclsetuser command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Aclusers() (interface{}, error) {
+
+	command_args := []string{"ACL", "USERS"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclusers command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Aclwhoami() (interface{}, error) {
+
+	command_args := []string{"ACL", "WHOAMI"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending aclwhoami command: %w", err)
+	}
+
+	return resp, nil
+}
