@@ -69,6 +69,10 @@ type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
 
+type BgsaveOpts struct {
+	schedule bool
+}
+
 type ClientUnblockOpts struct {
 	timeout bool
 	error   bool
@@ -179,6 +183,7 @@ type SScanOptsFunc func(*SScanOpts)
 type GetexOptsFunc func(*GetexOpts)
 type LCSOptsFunc func(*LCSOptions)
 type BitcountOptsFunc func(*BitcountOpts)
+type BgsaveOptsFunc func(*BgsaveOpts)
 
 func BitfieldGet(encoding string, offset int) BitfieldOperation {
 	return BitfieldOperation{Op: "GET", Encoding: encoding, Offset: offset}
@@ -2278,6 +2283,40 @@ func (r *RedisClient) Aclwhoami() (interface{}, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending aclwhoami command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Bgrewriteaof() (interface{}, error) {
+
+	resp, err := r.Do("BGREWRITEAOF")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending BGREWRITEAOF command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Bgsave(opts ...BgsaveOptsFunc) (interface{}, error) {
+
+	options := &BgsaveOpts{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	command_args := []string{"BGSAVE"}
+
+	if options.schedule {
+		command_args = append(command_args, "SCHEDULE")
+	}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending bgsave command: %w", err)
 	}
 
 	return resp, nil
