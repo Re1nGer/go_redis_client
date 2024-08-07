@@ -2321,3 +2321,46 @@ func (r *RedisClient) Bgsave(opts ...BgsaveOptsFunc) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Command(subcommands ...string) (interface{}, error) {
+
+	command_args := []string{"COMMAND"}
+
+	command_args = append(command_args, subcommands...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Commandcount() (interface{}, error) {
+
+	command_args := []string{"COMMAND", "COUNT"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command count command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Commanddocs(commands ...string) (interface{}, error) {
+
+	command_args := []string{"COMMAND", "DOCS"}
+
+	command_args = append(command_args, commands...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command docs command: %w", err)
+	}
+
+	return resp, nil
+}
