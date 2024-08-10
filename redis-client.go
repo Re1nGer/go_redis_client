@@ -69,6 +69,10 @@ type CredentialProvider struct{}
 type ConnectionPool struct{}
 type RedisConnectFunc func() (net.Conn, error)
 
+type CommandListOpts struct {
+	filterby string
+}
+
 type BgsaveOpts struct {
 	schedule bool
 }
@@ -184,6 +188,13 @@ type GetexOptsFunc func(*GetexOpts)
 type LCSOptsFunc func(*LCSOptions)
 type BitcountOptsFunc func(*BitcountOpts)
 type BgsaveOptsFunc func(*BgsaveOpts)
+type CommandListOptsFunc func(*CommandListOpts)
+
+func WithFilterByCommandList(modifier string) CommandListOptsFunc {
+	return func(opts *CommandListOpts) {
+		opts.filterby = modifier
+	}
+}
 
 func BitfieldGet(encoding string, offset int) BitfieldOperation {
 	return BitfieldOperation{Op: "GET", Encoding: encoding, Offset: offset}
@@ -2405,6 +2416,29 @@ func (r *RedisClient) Commandinfo(commandnames ...string) (interface{}, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending command command info docs command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) CommandList(opts ...CommandListOptsFunc) (interface{}, error) {
+
+	options := &CommandListOpts{}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	command_args := []string{"COMMAND", "LIST"}
+
+	if options.filterby != "" {
+		command_args = append(command_args, "FILTERBY", options.filterby)
+	}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command command list docs command: %w", err)
 	}
 
 	return resp, nil
