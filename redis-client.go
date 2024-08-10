@@ -2394,3 +2394,18 @@ func (r *RedisClient) Commandgetkeyssandflags(command string, args ...string) (i
 
 	return resp, nil
 }
+
+func (r *RedisClient) Commandinfo(commandnames ...string) (interface{}, error) {
+
+	command_args := []string{"COMMAND", "INFO"}
+
+	command_args = append(command_args, commandnames...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command command info docs command: %w", err)
+	}
+
+	return resp, nil
+}
