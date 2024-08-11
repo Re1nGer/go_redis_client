@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"os"
 	"testing"
-
-	"github.com/joho/godotenv"
 )
 
 // Helper function to compare byte slices
@@ -49,11 +47,11 @@ func TestEncodeCommand(t *testing.T) {
 
 func TestRedisConnection(t *testing.T) {
 
-	err := godotenv.Load(".env")
+	/* 	err := godotenv.Load(".env")
 
-	if err != nil {
-		t.Fatalf("Error loading .env file")
-	}
+	   	if err != nil {
+	   		t.Fatalf("Error loading .env file")
+	   	} */
 
 	// Fetch Redis connection details from environment variables
 	redisHost := os.Getenv("REDIS_HOST")
