@@ -2,7 +2,10 @@ package redisclient
 
 import (
 	"bytes"
+	"os"
 	"testing"
+
+	"github.com/joho/godotenv"
 )
 
 // Helper function to compare byte slices
@@ -44,21 +47,35 @@ func TestEncodeCommand(t *testing.T) {
 	}
 }
 
-/* func TestRedisConnection(t *testing.T) {
+func TestRedisConnection(t *testing.T) {
+
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		t.Fatalf("Error loading .env file")
+	}
+
 	// Fetch Redis connection details from environment variables
 	redisHost := os.Getenv("REDIS_HOST")
-	redisPassword := os.Getenv("REDIS_PASS")
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	t.Log(redisHost, redisPassword)
 
 	// Create Redis client
-	rdb, err := NewClient(redisHost, 15358, WithPassword(redisPassword))
+	rdb, err := NewClient(redisHost, 11364, WithPassword(redisPassword))
 	if err != nil {
 		t.Log("error while connecting ")
 	}
 
-	// Create a context
-
 	// Test connection
-	_, err = rdb.Ping()
+	res, err := rdb.Ping()
+
+	t.Log(res)
+
+	if res.(string) != "PONG" {
+		t.Fatalf("Incorrect response: %v", err)
+	}
 
 	if err != nil {
 		t.Fatalf("Failed to connect to Redis: %v", err)
@@ -66,4 +83,3 @@ func TestEncodeCommand(t *testing.T) {
 
 	t.Log("Redis connection test passed successfully")
 }
-*/
