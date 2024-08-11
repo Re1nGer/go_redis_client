@@ -2421,7 +2421,7 @@ func (r *RedisClient) Commandinfo(commandnames ...string) (interface{}, error) {
 	return resp, nil
 }
 
-func (r *RedisClient) CommandList(opts ...CommandListOptsFunc) (interface{}, error) {
+func (r *RedisClient) Commandlist(opts ...CommandListOptsFunc) (interface{}, error) {
 
 	options := &CommandListOpts{}
 
@@ -2439,6 +2439,21 @@ func (r *RedisClient) CommandList(opts ...CommandListOptsFunc) (interface{}, err
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending command command list docs command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Configget(parameter string, parameters ...string) (interface{}, error) {
+
+	command_args := []string{"CONFIG", "GET", parameter}
+
+	command_args = append(command_args, parameters...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command config get docs command: %w", err)
 	}
 
 	return resp, nil
