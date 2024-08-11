@@ -25,6 +25,9 @@ jobs:
       run: go mod download
 
     - name: Run tests with coverage
+      env:
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASS }}
       run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
@@ -35,8 +38,5 @@ jobs:
         fail_ci_if_error: true
 
     - name: Build
-      env:
-          REDIS_HOST: ${{ secrets.REDIS_HOST }}
-          REDIS_PASS: ${{ secrets.REDIS_PASS }}
       run: go build -v ./...
       
