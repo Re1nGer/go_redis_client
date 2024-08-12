@@ -2458,3 +2458,44 @@ func (r *RedisClient) Configget(parameter string, parameters ...string) (interfa
 
 	return resp, nil
 }
+
+func (r *RedisClient) Configresetstat() (interface{}, error) {
+
+	command_args := []string{"CONFIG", "RESETSTAT"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command config resetstat docs command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Configrewrite() (interface{}, error) {
+
+	command_args := []string{"CONFIG", "REWRITE"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command config rewrite docs command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Configset(parameter string, value string, parameters ...string) (interface{}, error) {
+
+	command_args := []string{"CONFIG", "SET", parameter, value}
+
+	command_args = append(command_args, parameters...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command config set  docs command: %w", err)
+	}
+
+	return resp, nil
+}
