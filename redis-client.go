@@ -2499,3 +2499,14 @@ func (r *RedisClient) Configset(parameter string, value string, parameters ...st
 
 	return resp, nil
 }
+
+func (r *RedisClient) Dbsize() (interface{}, error) {
+
+	resp, err := r.Do("DBSIZE")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command dbsize docs command: %w", err)
+	}
+
+	return resp, nil
+}
