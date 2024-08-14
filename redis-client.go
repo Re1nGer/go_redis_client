@@ -67,7 +67,12 @@ type Opts struct {
 type RetryOptions struct{}
 type CredentialProvider struct{}
 type ConnectionPool struct{}
+
 type RedisConnectFunc func() (net.Conn, error)
+
+type FlushAllOpts struct {
+	mode string
+}
 
 type CommandListOpts struct {
 	filterby string
@@ -90,6 +95,7 @@ type BitcountOpts struct {
 
 type ClientUnblockOptsFunc func(*ClientUnblockOpts)
 type ClientTrackingOption func(*clientTrackingOptions)
+type FlushAllOptsFunc func(*FlushAllOpts)
 
 type AclCatOpts struct {
 	cat string
@@ -193,6 +199,18 @@ type CommandListOptsFunc func(*CommandListOpts)
 func WithFilterByCommandList(modifier string) CommandListOptsFunc {
 	return func(opts *CommandListOpts) {
 		opts.filterby = modifier
+	}
+}
+
+func WithSyncFlushAll() FlushAllOptsFunc {
+	return func(opts *FlushAllOpts) {
+		opts.mode = "SYNC"
+	}
+}
+
+func WithAsyncFlushAll() FlushAllOptsFunc {
+	return func(opts *FlushAllOpts) {
+		opts.mode = "ASYNC"
 	}
 }
 
@@ -2494,7 +2512,7 @@ func (r *RedisClient) Configset(parameter string, value string, parameters ...st
 	resp, err := r.Do(command_args...)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while sending command config set  docs command: %w", err)
+		return nil, fmt.Errorf("error while sending command config set: %w", err)
 	}
 
 	return resp, nil
@@ -2505,7 +2523,44 @@ func (r *RedisClient) Dbsize() (interface{}, error) {
 	resp, err := r.Do("DBSIZE")
 
 	if err != nil {
-		return nil, fmt.Errorf("error while sending command dbsize docs command: %w", err)
+		return nil, fmt.Errorf("error while sending command dbsize: %w", err)
+	}
+
+	return resp, nil
+}
+
+// TODO
+func (r *RedisClient) Failover() (interface{}, error) {
+
+	resp, err := r.Do("FAILOVER")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending command dbsize command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Flushall(opts ...FlushAllOptsFunc) (interface{}, error) {
+
+	defualt_opts := &FlushAllOpts{mode: "SYNC"}
+
+	for _, opt := range opts {
+		opt(defualt_opts)
+	}
+
+	commands_args := []string{"FLUSHALL"}
+
+	if defualt_opts.mode == "SYNC" {
+		commands_args = append(commands_args, "SYNC")
+	} else {
+		commands_args = append(commands_args, "ASYNC")
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending flushall command: %w", err)
 	}
 
 	return resp, nil
