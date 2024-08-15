@@ -59,7 +59,6 @@ func TestRedisConnection(t *testing.T) {
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 
 	t.Log(redisHost, redisPassword)
-	t.Log(redisHost == "", redisPassword == "")
 
 	// Create Redis client
 	rdb, err := NewClient(redisHost, 11364, WithPassword(redisPassword))
