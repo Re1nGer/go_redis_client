@@ -74,6 +74,10 @@ type FlushAllOpts struct {
 	mode string
 }
 
+type FlushDbOpts struct {
+	mode string
+}
+
 type CommandListOpts struct {
 	filterby string
 }
@@ -96,6 +100,7 @@ type BitcountOpts struct {
 type ClientUnblockOptsFunc func(*ClientUnblockOpts)
 type ClientTrackingOption func(*clientTrackingOptions)
 type FlushAllOptsFunc func(*FlushAllOpts)
+type FlushDbOptsFunc func(*FlushDbOpts)
 
 type AclCatOpts struct {
 	cat string
@@ -195,6 +200,18 @@ type LCSOptsFunc func(*LCSOptions)
 type BitcountOptsFunc func(*BitcountOpts)
 type BgsaveOptsFunc func(*BgsaveOpts)
 type CommandListOptsFunc func(*CommandListOpts)
+
+func WithSyncFlushDb() FlushDbOptsFunc {
+	return func(opts *FlushDbOpts) {
+		opts.mode = "SYNC"
+	}
+}
+
+func WithAsyncFlushDb() FlushDbOptsFunc {
+	return func(opts *FlushDbOpts) {
+		opts.mode = "ASYNC"
+	}
+}
 
 func WithFilterByCommandList(modifier string) CommandListOptsFunc {
 	return func(opts *CommandListOpts) {
@@ -2561,6 +2578,31 @@ func (r *RedisClient) Flushall(opts ...FlushAllOptsFunc) (interface{}, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending flushall command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Flushdb(opts ...FlushDbOptsFunc) (interface{}, error) {
+
+	defualt_opts := &FlushDbOpts{mode: "SYNC"}
+
+	for _, opt := range opts {
+		opt(defualt_opts)
+	}
+
+	commands_args := []string{"FLUSHDB"}
+
+	if defualt_opts.mode == "SYNC" {
+		commands_args = append(commands_args, "SYNC")
+	} else {
+		commands_args = append(commands_args, "ASYNC")
+	}
+
+	resp, err := r.Do(commands_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending flushdb command: %w", err)
 	}
 
 	return resp, nil
