@@ -2607,3 +2607,40 @@ func (r *RedisClient) Flushdb(opts ...FlushDbOptsFunc) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Info(section ...string) (interface{}, error) {
+
+	command_args := []string{"INFO"}
+
+	command_args = append(command_args, section...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending info command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Lastsave() (interface{}, error) {
+
+	resp, err := r.Do("LASTSAVE")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending lastsave command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Latencydoctor() (interface{}, error) {
+
+	resp, err := r.Do("LATENCY", "DOCTOR")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latencydoctor command: %w", err)
+	}
+
+	return resp, nil
+}
