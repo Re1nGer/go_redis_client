@@ -230,6 +230,36 @@ The client supports the following Redis commands:
 - PING
 - QUIT (deprecated)
 
+### Server Management 
+- ACL CAT
+- ACL DELUSER
+- ACL DRYRUN
+- ACL GENPASS
+- ACL GETUSER
+- ACL LIST
+- ACL LOAD
+- ACL SAVE
+- ACL SETUSER
+- ACL USERS
+- ACL WHOAMI
+- BGREWRITEAOF
+- BGSAVE
+- COMMAND
+- COMMAND COUNT
+- COMMAND DOCS
+- COMMAND GETKEYS
+- COMMAND GETKEYSANDFLAGS
+- COMMAND INFO
+- COMMAND LIST
+- CONFIG GET
+- CONFIG RESETSTAT
+- CONFIG REWRITE
+- CONFIG SET
+- DBSIZE
+- FAILOVER
+- FLUSHALL
+- FLUSHDB
+
 More commands will be added in future updates.
 
 ## Configuration Options
