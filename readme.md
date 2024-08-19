@@ -259,6 +259,9 @@ The client supports the following Redis commands:
 - FAILOVER
 - FLUSHALL
 - FLUSHDB
+- INFO
+- LASTSAVE
+- LATENCY DOCTOR
 
 More commands will be added in future updates.
 
