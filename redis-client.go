@@ -2644,3 +2644,14 @@ func (r *RedisClient) Latencydoctor() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Latencygraph(event string) (interface{}, error) {
+
+	resp, err := r.Do("LATENCY", "GRAPH", event)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latency graph event command: %w", err)
+	}
+
+	return resp, nil
+}
