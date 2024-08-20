@@ -2655,3 +2655,18 @@ func (r *RedisClient) Latencygraph(event string) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Latencyhistogram(commands ...string) (interface{}, error) {
+
+	command_args := []string{"LATENCY", "HISTOGRAM"}
+
+	command_args = append(command_args, commands...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latency histogram command: %w", err)
+	}
+
+	return resp, nil
+}
