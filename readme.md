@@ -263,6 +263,7 @@ The client supports the following Redis commands:
 - LASTSAVE
 - LATENCY DOCTOR
 - LATENCY GRAPH
+- LATENCY HISTOGRAM
 
 More commands will be added in future updates.
 
