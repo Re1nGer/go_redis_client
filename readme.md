@@ -264,6 +264,7 @@ The client supports the following Redis commands:
 - LATENCY DOCTOR
 - LATENCY GRAPH
 - LATENCY HISTOGRAM
+- LATENCY HISTORY
 
 More commands will be added in future updates.
 
