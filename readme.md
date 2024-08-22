@@ -265,6 +265,9 @@ The client supports the following Redis commands:
 - LATENCY GRAPH
 - LATENCY HISTOGRAM
 - LATENCY HISTORY
+- LATENCY LATEST
+- LATENCY RESET
+- MEMORY DOCTOR
 
 More commands will be added in future updates.
 
