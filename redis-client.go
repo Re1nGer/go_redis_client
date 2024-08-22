@@ -2683,3 +2683,44 @@ func (r *RedisClient) Latencyhistory(event string) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Latencylatest(event string) (interface{}, error) {
+
+	command_args := []string{"LATENCY", "LATEST"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latency latest command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Latencyreset(event ...string) (interface{}, error) {
+
+	command_args := []string{"LATENCY", "RESET"}
+
+	command_args = append(command_args, event...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latency reset command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Memorydoctor() (interface{}, error) {
+
+	command_args := []string{"MEMORY", "DOCTOR"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending latency memory doctor command: %w", err)
+	}
+
+	return resp, nil
+}
