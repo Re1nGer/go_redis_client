@@ -2724,3 +2724,16 @@ func (r *RedisClient) Memorydoctor() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Memorymalockstats() (interface{}, error) {
+
+	command_args := []string{"MEMORY", "MALLOC-STATS"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending memory malloc-stats command: %w", err)
+	}
+
+	return resp, nil
+}
