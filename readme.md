@@ -268,6 +268,7 @@ The client supports the following Redis commands:
 - LATENCY LATEST
 - LATENCY RESET
 - MEMORY DOCTOR
+- MEMORY MALLOC-STATS
 
 More commands will be added in future updates.
 
