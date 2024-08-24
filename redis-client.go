@@ -2737,3 +2737,29 @@ func (r *RedisClient) Memorymalockstats() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Memorypurge() (interface{}, error) {
+
+	command_args := []string{"MEMORY", "PURGE"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending memory purge command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Memorystats() (interface{}, error) {
+
+	command_args := []string{"MEMORY", "STATS"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending memory stats command: %w", err)
+	}
+
+	return resp, nil
+}
