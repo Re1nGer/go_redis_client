@@ -70,6 +70,10 @@ type ConnectionPool struct{}
 
 type RedisConnectFunc func() (net.Conn, error)
 
+type MemoryUsageOpts struct {
+	samples int
+}
+
 type FlushAllOpts struct {
 	mode string
 }
@@ -101,6 +105,7 @@ type ClientUnblockOptsFunc func(*ClientUnblockOpts)
 type ClientTrackingOption func(*clientTrackingOptions)
 type FlushAllOptsFunc func(*FlushAllOpts)
 type FlushDbOptsFunc func(*FlushDbOpts)
+type MemoryUsageOptsFunc func(*MemoryUsageOpts)
 
 type AclCatOpts struct {
 	cat string
@@ -2759,6 +2764,25 @@ func (r *RedisClient) Memorystats() (interface{}, error) {
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending memory stats command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Memoryusage(key string, opts ...MemoryUsageOptsFunc) (interface{}, error) {
+
+	defualt_opts := &MemoryUsageOpts{samples: 5}
+
+	for _, opt := range opts {
+		opt(defualt_opts)
+	}
+
+	command_args := []string{"MEMORY", "USAGE", key, "SAMPLES", strconv.Itoa(defualt_opts.samples)}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending memory usage command: %w", err)
 	}
 
 	return resp, nil
