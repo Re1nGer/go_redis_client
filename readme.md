@@ -271,6 +271,7 @@ The client supports the following Redis commands:
 - MEMORY MALLOC-STATS
 - MEMORY PURGE
 - MEMORY STATS
+- MEMORY USAGE
 
 More commands will be added in future updates.
 
