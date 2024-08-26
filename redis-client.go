@@ -2787,3 +2787,57 @@ func (r *RedisClient) Memoryusage(key string, opts ...MemoryUsageOptsFunc) (inte
 
 	return resp, nil
 }
+
+func (r *RedisClient) Modulelist() (interface{}, error) {
+
+	command_args := []string{"MODULE", "LIST"}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending module list command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Modulelog(path string, args ...string) (interface{}, error) {
+
+	command_args := []string{"MODULE", "LOAD", path}
+
+	command_args = append(command_args, args...)
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending module load command: %w", err)
+	}
+
+	return resp, nil
+}
+
+// missing module loadex
+
+func (r *RedisClient) Moduleunload(name string) (interface{}, error) {
+
+	command_args := []string{"MODULE", "UNLOAD", name}
+
+	resp, err := r.Do(command_args...)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending module unload command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Monitor(name string) (interface{}, error) {
+
+	resp, err := r.Do("MONITOR")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending monitor command: %w", err)
+	}
+
+	return resp, nil
+}
