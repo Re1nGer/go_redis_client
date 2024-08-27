@@ -2841,3 +2841,25 @@ func (r *RedisClient) Monitor(name string) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Psync(replacationid string, offset string) (interface{}, error) {
+
+	resp, err := r.Do("PSYNC", replacationid, offset)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending psync command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Replconf(replacationid string, offset string) (interface{}, error) {
+
+	resp, err := r.Do("REPLCONF")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending replconf command: %w", err)
+	}
+
+	return resp, nil
+}
