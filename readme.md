@@ -274,6 +274,8 @@ The client supports the following Redis commands:
 - MEMORY USAGE
 - MODULE UNLOAD
 - MONITOR
+- PSYNC
+- REPLCONF
 
 More commands will be added in future updates.
 
