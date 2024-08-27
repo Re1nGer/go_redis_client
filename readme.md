@@ -272,6 +272,8 @@ The client supports the following Redis commands:
 - MEMORY PURGE
 - MEMORY STATS
 - MEMORY USAGE
+- MODULE UNLOAD
+- MONITOR
 
 More commands will be added in future updates.
 
