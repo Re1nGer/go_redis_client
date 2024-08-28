@@ -106,12 +106,17 @@ type ClientTrackingOption func(*clientTrackingOptions)
 type FlushAllOptsFunc func(*FlushAllOpts)
 type FlushDbOptsFunc func(*FlushDbOpts)
 type MemoryUsageOptsFunc func(*MemoryUsageOpts)
+type ReplicaOfOptsFunc func(*ReplicaOfOpts)
 
 type AclCatOpts struct {
 	cat string
 }
 
 type AclCatOptsFunc func(*AclCatOpts)
+
+type ReplicaOfOpts struct {
+	host string
+}
 
 type clientTrackingOptions struct {
 	on       bool
@@ -2859,6 +2864,23 @@ func (r *RedisClient) Replconf(replacationid string, offset string) (interface{}
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending replconf command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Replicaof(opts ...ReplicaOfOptsFunc) (interface{}, error) {
+
+	defualt_opts := &ReplicaOfOpts{host: "NO ONE"}
+
+	for _, opt := range opts {
+		opt(defualt_opts)
+	}
+
+	resp, err := r.Do("REPLICAOF", defualt_opts.host)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending replicaof command: %w", err)
 	}
 
 	return resp, nil

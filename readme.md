@@ -276,6 +276,7 @@ The client supports the following Redis commands:
 - MONITOR
 - PSYNC
 - REPLCONF
+- REPLICAOF
 
 More commands will be added in future updates.
 
