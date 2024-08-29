@@ -2885,3 +2885,14 @@ func (r *RedisClient) Replicaof(opts ...ReplicaOfOptsFunc) (interface{}, error) 
 
 	return resp, nil
 }
+
+func (r *RedisClient) Role() (interface{}, error) {
+
+	resp, err := r.Do("ROLE")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending role command: %w", err)
+	}
+
+	return resp, nil
+}
