@@ -2896,3 +2896,14 @@ func (r *RedisClient) Role() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Save() (interface{}, error) {
+
+	resp, err := r.Do("SAVE")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending save command: %w", err)
+	}
+
+	return resp, nil
+}
