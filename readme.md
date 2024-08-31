@@ -278,6 +278,7 @@ The client supports the following Redis commands:
 - REPLCONF
 - REPLICAOF
 - ROLE
+- SAVE
 
 More commands will be added in future updates.
 
