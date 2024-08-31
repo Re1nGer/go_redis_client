@@ -277,6 +277,7 @@ The client supports the following Redis commands:
 - PSYNC
 - REPLCONF
 - REPLICAOF
+- ROLE
 
 More commands will be added in future updates.
 
