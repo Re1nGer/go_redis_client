@@ -279,6 +279,7 @@ The client supports the following Redis commands:
 - REPLICAOF
 - ROLE
 - SAVE
+- SLOWLOG LEN
 
 More commands will be added in future updates.
 
