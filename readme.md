@@ -280,6 +280,7 @@ The client supports the following Redis commands:
 - ROLE
 - SAVE
 - SLOWLOG LEN
+- SLOWLOG RESET
 
 More commands will be added in future updates.
 
