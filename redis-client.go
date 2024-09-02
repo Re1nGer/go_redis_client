@@ -2910,10 +2910,21 @@ func (r *RedisClient) Save() (interface{}, error) {
 
 func (r *RedisClient) Slowloglen() (interface{}, error) {
 
-	resp, err := r.Do("SLOWLOG LEN")
+	resp, err := r.Do("SLOWLOG", "LEN")
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending slow log command: %w", err)
+	}
+
+	return resp, nil
+}
+
+func (r *RedisClient) Slowlogreset() (interface{}, error) {
+
+	resp, err := r.Do("SLOWLOG", "RESET")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending slow log reset command: %w", err)
 	}
 
 	return resp, nil
