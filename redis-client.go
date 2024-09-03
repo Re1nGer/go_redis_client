@@ -2929,3 +2929,14 @@ func (r *RedisClient) Slowlogreset() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Swapdb(idx1 int, idx2 int) (interface{}, error) {
+
+	resp, err := r.Do("SWAPDB", strconv.Itoa(idx1), strconv.Itoa(idx2))
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending swapdb command: %w", err)
+	}
+
+	return resp, nil
+}
