@@ -281,6 +281,7 @@ The client supports the following Redis commands:
 - SAVE
 - SLOWLOG LEN
 - SLOWLOG RESET
+- SWAPDB
 
 More commands will be added in future updates.
 
