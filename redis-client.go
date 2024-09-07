@@ -2940,3 +2940,14 @@ func (r *RedisClient) Swapdb(idx1 int, idx2 int) (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Sync() (interface{}, error) {
+
+	resp, err := r.Do("SYNC")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending sync command: %w", err)
+	}
+
+	return resp, nil
+}
