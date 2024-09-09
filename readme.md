@@ -283,6 +283,7 @@ The client supports the following Redis commands:
 - SLOWLOG RESET
 - SWAPDB
 - SYNC
+- TIME
 
 More commands will be added in future updates.
 
