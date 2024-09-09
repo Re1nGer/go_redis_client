@@ -2951,3 +2951,14 @@ func (r *RedisClient) Sync() (interface{}, error) {
 
 	return resp, nil
 }
+
+func (r *RedisClient) Time() (interface{}, error) {
+
+	resp, err := r.Do("TIME")
+
+	if err != nil {
+		return nil, fmt.Errorf("error while sending time command: %w", err)
+	}
+
+	return resp, nil
+}
