@@ -2825,9 +2825,7 @@ func (r *RedisClient) Modulelog(path string, args ...string) (interface{}, error
 
 func (r *RedisClient) Moduleunload(name string) (interface{}, error) {
 
-	command_args := []string{"MODULE", "UNLOAD", name}
-
-	resp, err := r.Do(command_args...)
+	resp, err := r.Do("MODULE", "UNLOAD", name)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while sending module unload command: %w", err)
