@@ -300,6 +300,7 @@ The client supports various configuration options:
 - `WithSocketTimeout(duration time.Duration)`: Set the timeout for socket operations
 - `WithSocketKeepAlive(enabled bool, interval time.Duration)`: Enable and set the interval for TCP keep-alive packets
 
+
 ## Error Handling
 
 The client returns errors for various scenarios, including connection failures, authentication errors, and Redis command errors. Always check the returned error and handle it appropriately in your application.
