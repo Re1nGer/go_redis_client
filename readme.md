@@ -288,6 +288,8 @@ The client supports the following Redis commands:
 
 More commands will be added in future updates.
 
+Tests are being added as well
+
 ## Configuration Options
 
 The client supports various configuration options:
