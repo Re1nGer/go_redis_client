@@ -127,6 +127,8 @@ func TestHSetCommand(t *testing.T) {
 		t.Log("error while connecting ")
 	}
 
+	rdb.HDel("myhash", "field1")
+
 	hres, err := rdb.HSet("myhash", "field1", "foo")
 
 	if hres.(int64) != 1 {
