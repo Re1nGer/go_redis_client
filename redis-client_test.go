@@ -130,7 +130,7 @@ func TestHSetCommand(t *testing.T) {
 	res, err := rdb.HSet("myhash", "field1", "foo")
 
 	if res.(int64) != 1 {
-		t.Fatalf("Incorrect response: %v", err)
+		t.Fatalf("Incorrect response: %v", res)
 	}
 
 	res, err = rdb.HDel("myhash", "field1")
