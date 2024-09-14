@@ -288,6 +288,8 @@ The client supports the following Redis commands:
 
 More commands will be added in future updates.
 
+Tests are being added as well
+
 ## Configuration Options
 
 The client supports various configuration options:
@@ -299,6 +301,7 @@ The client supports various configuration options:
 - `WithSocketConnectTimeout(duration time.Duration)`: Set the timeout for connecting to the Redis server
 - `WithSocketTimeout(duration time.Duration)`: Set the timeout for socket operations
 - `WithSocketKeepAlive(enabled bool, interval time.Duration)`: Enable and set the interval for TCP keep-alive packets
+
 
 ## Error Handling
 
