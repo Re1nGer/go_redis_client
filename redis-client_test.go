@@ -127,16 +127,16 @@ func TestHSetCommand(t *testing.T) {
 		t.Log("error while connecting ")
 	}
 
-	res, err := rdb.HSet("myhash", "field1", "foo")
+	hres, err := rdb.HSet("myhash", "field1", "foo")
 
-	if res.(int64) != 1 {
-		t.Fatalf("Incorrect response: %v", res)
+	if hres.(int64) != 1 {
+		t.Fatalf("Incorrect response: %v", hres)
 	}
 
-	res, err = rdb.HDel("myhash", "field1")
+	dres, err := rdb.HDel("myhash", "field1")
 
-	if res.(int64) != 1 {
-		t.Fatalf("Incorrect response from hdel command: %v", err)
+	if dres.(int64) != 1 {
+		t.Fatalf("Incorrect response from hdel command: %v", dres)
 	}
 
 	if err != nil {
