@@ -113,3 +113,35 @@ func TestGetCommand(t *testing.T) {
 
 	t.Log("get command tested successfully")
 }
+
+func TestHSetCommand(t *testing.T) {
+
+	redisHost := os.Getenv("REDIS_HOST")
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	// Create Redis client
+	rdb, err := NewClient(redisHost, 11364, WithPassword(redisPassword))
+
+	if err != nil {
+		t.Log("error while connecting ")
+	}
+
+	res, err := rdb.HSet("myhash", "field1", "foo")
+
+	if res.(int) != 1 {
+		t.Fatalf("Incorrect response: %v", err)
+	}
+
+	res, err = rdb.HDel("myhash", "field1")
+
+	if res.(int) != 1 {
+		t.Fatalf("Incorrect response from hdel command: %v", err)
+	}
+
+	if err != nil {
+		t.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	t.Log("hdel command tested successfully")
+}
