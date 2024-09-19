@@ -147,3 +147,38 @@ func TestHSetCommand(t *testing.T) {
 
 	t.Log("hdel command tested successfully")
 }
+
+func TestHExistsCommand(t *testing.T) {
+
+	redisHost := os.Getenv("REDIS_HOST")
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+
+	// Create Redis client
+	rdb, err := NewClient(redisHost, 11364, WithPassword(redisPassword))
+
+	if err != nil {
+		t.Log("error while connecting ")
+	}
+
+	//in case it already exists
+	rdb.HDel("myhash", "field1")
+
+	hres, err := rdb.HSet("myhash", "field1", "foo")
+
+	if hres.(int64) != 1 {
+		t.Fatalf("Incorrect response: %v", hres)
+	}
+
+	exists_res, _ := rdb.HExists("myhash", "field1")
+
+	if exists_res.(int64) != 1 {
+		t.Fatalf("Incorrect response from hdel command: %v", exists_res)
+	}
+
+	if err != nil {
+		t.Fatalf("Failed to connect to Redis: %v", err)
+	}
+
+	t.Log("hexists command tested successfully")
+}
