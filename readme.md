@@ -13,7 +13,6 @@ This is a lightweight, feature-rich Redis client for Go. It provides a simple an
 - Flexible configuration options
 - Socket timeout and keep-alive settings
 
-
 ## Installation
 
 To install the Redis client, use the following command:
